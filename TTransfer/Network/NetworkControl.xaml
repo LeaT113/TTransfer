@@ -1,0 +1,173 @@
+﻿<UserControl x:Class="TTransfer.Network.NetworkControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TTransfer.Network"
+             mc:Ignorable="d" Name="NetworkObject"
+             d:DesignHeight="300" d:DesignWidth="200">
+
+    <UserControl.Resources>
+
+        <Style x:Key="SendButton" TargetType="{x:Type Button}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}" >
+                        <Border Background="{TemplateBinding Background}" BorderBrush="#535353" BorderThickness="1">
+                            <ContentPresenter Margin="8,4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#4D4D4D"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+
+        <Style x:Key="SendButtonDisabled" TargetType="{x:Type Button}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#303030"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}" >
+                        <Border Background="{TemplateBinding Background}" BorderBrush="#303030" BorderThickness="1">
+                            <ContentPresenter Margin="8,4" HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="#303030"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <Style x:Key="ListViewItemOnline" TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Name="_Border" Padding="2" SnapsToDevicePixels="true">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="_Border" Property="Background" Value="#4D4D4D"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter TargetName="_Border" Property="Background" Value="#777777"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <Style x:Key="ListViewItemOffline" TargetType="ListBoxItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Name="_Border" Padding="2" Opacity="0.3" SnapsToDevicePixels="true">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="true">
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <local:DeviceItemStyleConverter x:Key="StyleConverter"/>
+    </UserControl.Resources>
+
+
+    
+    <Grid Loaded="Grid_Loaded" Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="42"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        
+        <!--Header-->
+        <Grid VerticalAlignment="Stretch" Background="#191919">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Label Margin="2,0,0,0" VerticalAlignment="Center" Content="Network" Foreground="White" FontSize="17" />
+            <Button Name="SendButton" Grid.Column="1" Margin="4, 0, 10, 0" VerticalAlignment="Center" Content="Send" FontSize="15" Style="{StaticResource SendButton}" Click="SendButton_Click"/>
+        </Grid>
+
+        
+        <!--Item view-->
+        <ListView x:Name="DeviceListView" Grid.Row="1" Margin="0,0,3,6" BorderBrush="#535353" Background="#1e1e1e" HorizontalContentAlignment="Stretch" SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Height="30">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Image Name="DeviceListView_DeviceIcon" Margin="3" Source="{Binding DeviceIcon}" />
+                        <Label Name="DeviceListView_Name" Grid.Column="1" VerticalAlignment="Center" Content="{Binding Name}" FontSize="11" Foreground="White"/>
+                        <Button Name="DeviceListView_ReceiveModeButton" Grid.Column="2" Style="{StaticResource WindowsButton}" Click="DeviceListView_ReceiveModeButton_Click" Tag="{Binding MacAddressString}">
+                            <Image Name="DeviceListView_ReceiveModeIcon" Margin="5" Source="{Binding ReceiveModeIcon}" ToolTip="{Binding ReceiveModeTooltip}"/>
+                        </Button>
+                        <Button Name="DeviceListView_EncryptionButton" Grid.Column="3" Style="{StaticResource WindowsButton}" Click="DeviceListView_EncryptionButton_Click" Tag="{Binding MacAddressString}" ToolTip="{Binding EncryptionModeTooltip}">
+                            <Image Margin="5" Source="{Binding EncryptionModeIcon}"/>
+                        </Button>
+                        <Button Name="DeviceListView_Remove" Grid.Column="4" Click="DeviceListView_Remove_Click" Tag="{Binding MacAddressString}">
+                            <Image Margin="8.5" Source="Icons/Device_Remove.png" Opacity=".8" ToolTip="{Binding ReceiveModeTooltip}"/>
+                            <Button.Style>
+                                <MultiBinding Converter="{StaticResource StyleConverter }">
+                                    <MultiBinding.Bindings>
+                                        <Binding RelativeSource="{RelativeSource Self}"/>
+                                        <Binding Path="RemoveButtonStyle"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.Style>
+                        </Button>
+
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+
+            <ListView.ItemContainerStyle>
+                <MultiBinding Converter="{StaticResource StyleConverter }">
+                    <MultiBinding.Bindings>
+                        <Binding RelativeSource="{RelativeSource Self}"/>
+                        <Binding Path="ListViewItemStyle"/>
+                    </MultiBinding.Bindings>
+                </MultiBinding>
+            </ListView.ItemContainerStyle>
+
+        </ListView>
+        
+        
+        
+        
+
+    </Grid>
+</UserControl>
+
+
+
+
+
+
+
+
