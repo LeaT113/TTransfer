@@ -70,6 +70,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Explorer\IconService.cs" />
+    <Compile Include="Network\CommunicationResult.cs" />
     <Compile Include="Network\DeviceItemStyleConverter.cs" />
     <Compile Include="Network\EncryptionPasswordDialog.xaml.cs">
       <DependentUpon>EncryptionPasswordDialog.xaml</DependentUpon>
@@ -77,6 +79,10 @@
     <Compile Include="Network\OnlineDevices.cs" />
     <Compile Include="Network\PhysicalAddressSerializable.cs" />
     <Compile Include="Network\TransferClient.cs" />
+    <Compile Include="Network\TransferProgressBar.xaml.cs">
+      <DependentUpon>TransferProgressBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Network\TransferProgressReport.cs" />
     <Compile Include="Network\TransferServer.cs" />
     <Compile Include="Network\DataEncryptor.cs" />
     <Compile Include="Settings.cs" />
@@ -120,6 +126,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Network\NetworkControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Network\TransferProgressBar.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -172,16 +182,11 @@
     <Resource Include="Explorer\Icons\arrow.ico" />
     <Resource Include="Explorer\Icons\icon_cancel.ico" />
     <Resource Include="Explorer\Icons\icon_cross.png" />
-    <Resource Include="Explorer\Icons\icon_dir.ico" />
     <Resource Include="Explorer\Icons\disk_fixed.ico" />
     <Resource Include="Explorer\Icons\disk_windows.ico" />
-    <Resource Include="Explorer\Icons\icon_exe.ico" />
-    <Resource Include="Explorer\Icons\icon_file.ico" />
     <Resource Include="Explorer\Icons\disk_network.ico" />
     <Resource Include="Explorer\Icons\icon_plus.png" />
-    <Resource Include="Explorer\Icons\icon_received.ico" />
-    <Resource Include="Explorer\Icons\icon_rename.ico" />
-    <Resource Include="Explorer\Icons\icon_upload.ico" />
+    <Resource Include="Explorer\Icons\icon_entertext.ico" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Explorer\Icons\icon_caret.png" />
@@ -219,6 +224,15 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Settings\Icons\icon_settings.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Explorer\Icons\icon_folderBackup.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Explorer\Icons\icon_fileBackup.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Network\Icons\icon_entertext_black.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

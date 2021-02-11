@@ -59,6 +59,8 @@
             <Button Name="SettingsButton" Grid.Column="2"  Style="{StaticResource WindowsButton}" ToolTip="Open settings" Click="SettingsButton_Click">
                 <Image Margin="3" Source="Settings/Icons/icon_settings.png"/>
             </Button>
+
+            <net:TransferProgressBar x:Name="TransferProgress" Grid.Column="1" HorizontalAlignment="Left" Margin="10, 0, 20, 0"></net:TransferProgressBar>
         </Grid>
     </Grid>
 </Window>

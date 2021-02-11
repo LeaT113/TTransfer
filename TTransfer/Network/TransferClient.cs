@@ -22,17 +22,21 @@ namespace TTransfer.Network
         List<DirectoryItem> items;
         Device serverDevice;
         DataEncryptor serverEncryptor;
+        IProgress<TransferProgressReport> transferProgress;
         int port;
         int maxPingMs;
         long maxBufferSize;
+        long bytesSent;
+        long totalBytes;
         
 
 
-        public TransferClient(int port, int maxPingMs, int maxBufferSize)
+        public TransferClient(int port, int maxPingMs, int maxBufferSize, IProgress<TransferProgressReport> transferProgress)
         {
             this.port = port;
             this.maxPingMs = maxPingMs;
             this.maxBufferSize = maxBufferSize;
+            this.transferProgress = transferProgress;
         }
 
 
@@ -77,9 +81,9 @@ namespace TTransfer.Network
             // Send data
             success = await SendData();
             if (success)
-                OnRecordableEvent("Received all data successfully.", Console.ConsoleMessageType.Common);
+                OnRecordableEvent("Sent all data successfully.", Console.ConsoleMessageType.Common);
             else
-                OnRecordableEvent("There was an error while receiving data.", Console.ConsoleMessageType.Error);
+                OnRecordableEvent("There was an error while sending data.", Console.ConsoleMessageType.Error);
 
 
             // End connection
@@ -89,18 +93,18 @@ namespace TTransfer.Network
         {
             return await Task.Run(() =>
             {
-                TTInstruction instruction = TTInstruction.Empty;
-                byte[] data = null;
+                CommunicationResult res = null;
                 byte[] buffer = null;
 
 
                 // Deny, accept, or askpass
-                if (!TryRead(1, ref instruction, ref data))
+                res = TryRead(1);
+                if (!res.Success)
                     return false;
 
 
                 // Denied
-                switch (instruction)
+                switch (res.Instruction)
                 {
                     case TTInstruction.Connection_RefuseBusy:
                         OnRecordableEvent($"Connection to {serverDevice.Name} failed because it's busy right now.", Console.ConsoleMessageType.Error);
@@ -115,13 +119,13 @@ namespace TTransfer.Network
 
                 // Encryption
                 DataEncryptor encryptor = null;
-                if(serverDevice.EncryptionEnabled)
+                if (serverDevice.EncryptionEnabled)
                 {
                     // Check if server also has password set
-                    if(instruction != TTInstruction.Connection_AskPass)
+                    if (res.Instruction != TTInstruction.Connection_AskPass)
                     {
                         OnRecordableEvent($"Connection to {serverDevice.Name} refused because you have set a password and it has none.", Console.ConsoleMessageType.Error);
-                        TrySend(new byte[] { (byte)TTInstruction.Connection_RefusePass });
+                        TrySend(new byte[] { (byte)TTInstruction.Connection_RefusePass }, false);
                         return false;
                     }
 
@@ -129,70 +133,81 @@ namespace TTransfer.Network
                     // Send password
                     encryptor = new DataEncryptor(serverDevice.EncryptionPassword);
                     byte[] timePassword = TTNet.GenerateTimePasswordBytes();
-                    buffer = new byte[1] { (byte)TTInstruction.Connection_SendPass }.ToList().Concat(encryptor.AESEncryptBytes(timePassword)).ToArray();
-                    if (!TrySend(buffer))
+                    buffer = new byte[1] { (byte)TTInstruction.Connection_SendPass }
+                    .ToList()
+                    .Concat(encryptor.AESEncryptBytes(timePassword))
+                    .ToArray();
+                    if (!TrySend(buffer, false))
                         return false;
 
 
                     // Receive password
-                    if (!TryRead(TTNet.TimePasswordLength + 1, ref instruction, ref data))
+                    res = TryRead(TTNet.TimePasswordLength + 1);
+                    if (!res.Success)
                         return false;
 
 
                     // Check password
-                    byte[] receivedTimePassword = encryptor.AESDecryptBytes(data);
+                    byte[] receivedTimePassword = encryptor.AESDecryptBytes(res.Data);
                     if (Enumerable.SequenceEqual(timePassword, receivedTimePassword) || !TTNet.CheckTimePasswordValid(receivedTimePassword, serverDevice, maxPingMs))
                     {
                         OnRecordableEvent($"Connection to {serverDevice.Name} refused because it did not have the correct password.", Console.ConsoleMessageType.Error);
+                        // TODO Send RefusePass to server
                         return false;
                     }
                 }
                 else
                 {
                     // Check if server also doesn't use password
-                    if(instruction != TTInstruction.Connection_Accept)
+                    if (res.Instruction != TTInstruction.Connection_Accept)
                     {
                         OnRecordableEvent($"Connection to {serverDevice.Name} failed because it requires a password and none is set.", Console.ConsoleMessageType.Error);
-                        TrySend(new byte[] { (byte)TTInstruction.Connection_RefuseDeny }); // TODO Doesn't work, server doesn't recognize this scenario
+                        TrySend(new byte[] { (byte)TTInstruction.Connection_RefuseDeny }, false); // TODO Doesn't work, server doesn't recognize this scenario
                         return false;
                     }
                 }
 
 
                 // Send connection accept
-                if (!TrySend(new byte[] { (byte)TTInstruction.Connection_Accept }))
+                if (!TrySend(new byte[] { (byte)TTInstruction.Connection_Accept }, false))
                     return false;
 
 
                 serverEncryptor = encryptor;
-                OnRecordableEvent($"Established { (serverDevice.EncryptionEnabled ? "secured" : "")} connection with {serverDevice.Name}.", Console.ConsoleMessageType.Common);
+                OnRecordableEvent($"Established { (serverDevice.EncryptionEnabled ? "secure " : "")}connection with {serverDevice.Name}.", Console.ConsoleMessageType.Common);
                 return true;
             });
         }
-        private bool TrySend(byte[] buffer)
+
+        private bool TrySend(byte[] buffer, bool doEncryption)
         {
-            WriteResult result = client.SendWithTimeout(maxPingMs, buffer);
+            byte[] b = buffer;
+            if (doEncryption && serverEncryptor != null)
+                b = serverEncryptor.AESEncryptBytes(buffer);
+
+            WriteResult result = client.SendWithTimeout(maxPingMs, b);
 
             if (result.Status != WriteResultStatus.Success)
             {
-                OnRecordableEvent($"Could not send data to {serverDevice.Name}.", Console.ConsoleMessageType.Error);
                 return false;
             }
 
             return true;
         }
-        private bool TryRead(int count, ref TTInstruction instruction, ref byte[] data)
+        private CommunicationResult TryRead(int count)
         {
             ReadResult result = client.ReadWithTimeout(maxPingMs, count);
 
-            if (result.Status != ReadResultStatus.Success || !TTNet.UnpackTCPBuffer(result.Data, ref instruction, ref data))
+            TTInstruction ins = TTInstruction.Empty;
+            byte[] dat = null;
+            if (result.Status != ReadResultStatus.Success || !TTNet.UnpackTCPBuffer(result.Data, ref ins, ref dat))
             {
-                OnRecordableEvent($"Timed out {serverDevice.Name}.", Console.ConsoleMessageType.Error);
-                return false;
+                return new CommunicationResult();
             }
 
-            return true;
+            return new CommunicationResult(ins, dat);
         }
+
         public void TerminateConnection()
         {
             // TODO Cancellation token for sending
@@ -237,23 +252,25 @@ namespace TTransfer.Network
                 byte[] sizeBytes = BitConverter.GetBytes(totalSize);
                 Array.Copy(sizeBytes, 0, infoBuffer, 1 + 4, 8);
 
-                client.Send(infoBuffer);
+                if (!TrySend(infoBuffer, true))
+                    return false;
 
 
                 // Send data
-                long totalBytesSent = 0;
+                bytesSent = 0;
+                totalBytes = totalSize;
                 foreach (var item in items)
                 {
                     if (item.IsFolder)
                     {
-                        if (!SendFolder(item, "", ref totalBytesSent))
+                        if (!SendFolder(item, ""))
                             return false;
                     }
                     else
                     {
-                        if (!SendFile(item, "", ref totalBytesSent))
+                        if (!SendFile(item, ""))
                             return false;
-                    }   
+                    }
                 }
 
 
@@ -264,33 +281,38 @@ namespace TTransfer.Network
         /// <summary>
         /// Sends a file to the server and returns false if there was a network error.
         /// </summary>
-        private bool SendFile(DirectoryItem file, string relativePath, ref long totalBytesSent)
+        private bool SendFile(DirectoryItem file, string relativePath)
         {
             if (file.IsFolder)
                 throw new Exception("Cannot send folder as file.");
 
-            WriteResult result;
-
 
             // Send file info
-            byte[] b = new byte[512];
-            b[0] = (byte)TTInstruction.Transfer_FileInfo;
+            byte[] infoBuffer = new byte[512];
+            infoBuffer[0] = (byte)TTInstruction.Transfer_FileInfo;
 
             byte[] sizeBytes = BitConverter.GetBytes(file.Size);
-            Array.Copy(sizeBytes, 0, b, 1, sizeBytes.Length);
+            Array.Copy(sizeBytes, 0, infoBuffer, 1, sizeBytes.Length);
 
             string fullName = $"{relativePath}{file.Name}";
             byte[] fullNameBytes = Encoding.UTF8.GetBytes(fullName);
-            Array.Copy(fullNameBytes, 0, b, 1 + sizeBytes.Length, fullNameBytes.Length);
+            Array.Copy(fullNameBytes, 0, infoBuffer, 1 + sizeBytes.Length, fullNameBytes.Length);
 
-            result = client.Send(b);
-            if (result.Status != WriteResultStatus.Success)
+
+            if (!TrySend(infoBuffer, true))
                 return false;
 
 
             // Send file
             long bytesToSend = file.Size;
             bool useEncryption = serverEncryptor != null;
+            TransferProgressReport report = new TransferProgressReport();
+            report.TotalBytes = totalBytes;
+            report.ActiveItem = file.Name;
+            report.CurrentBytes = 0;
+            report.IsSender = true;
+            transferProgress.Report(report);
+            WriteResult result;
             try
             {
                 using (FileStream fs = File.OpenRead(file.Path))
@@ -306,22 +328,33 @@ namespace TTransfer.Network
                         if (useEncryption)
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
 
-                        client.Send(buffer);
+                        result = client.Send(buffer);
                         if (result.Status != WriteResultStatus.Success)
                             return false;
 
                         bytesToSend -= bufferSize;
-                        totalBytesSent += bufferSize;
+                        bytesSent += bufferSize;
+
+                        if(bytesSent > report.CurrentBytes + (totalBytes/100))
+                        {
+                            report.CurrentBytes = bytesSent;
+                            transferProgress.Report(report);
+                        }
+                        if(bytesToSend == 0)
+                        {
+                            report.CurrentBytes = totalBytes;
+                            transferProgress.Report(report);
+                        }
                     }
                     fs.Flush();
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                OnRecordableEvent($"Aborting, failed to send {file.Name}.", Console.ConsoleMessageType.Error);
+                OnRecordableEvent($"Aborting, failed to send {file.Name} ({e.Message}).", Console.ConsoleMessageType.Error);
                 return false;
             }
-            
+
 
             return true;
         }
@@ -329,24 +362,21 @@ namespace TTransfer.Network
          /// <summary>
         /// Sends a folder and all of it contents recursively to the server and returns false if there was a network error.
         /// </summary>
-        private bool SendFolder(DirectoryItem folder, string relativePath, ref long totalBytes)
+        private bool SendFolder(DirectoryItem folder, string relativePath)
         {
             if (!folder.IsFolder)
                 throw new Exception("Cannot send file as folder.");
 
-            WriteResult result;
-
 
             // Send folder info
-            byte[] b = new byte[512]; // TODO Expand to 1024+9 to cover all of UTF8?
-            b[0] = (byte)TTInstruction.Transfer_FolderInfo;
+            byte[] infoBuffer = new byte[512]; // TODO Expand to 1024+9 to cover all of UTF8?
+            infoBuffer[0] = (byte)TTInstruction.Transfer_FolderInfo;
 
             string fullName = $"{relativePath}{folder.Name}";
             byte[] fullNameBytes = Encoding.UTF8.GetBytes(fullName);
-            Array.Copy(fullNameBytes, 0, b, 1 + 8, fullNameBytes.Length);
+            Array.Copy(fullNameBytes, 0, infoBuffer, 1 + 8, fullNameBytes.Length);
 
-            result = client.Send(b);
-            if (result.Status != WriteResultStatus.Success)
+            if (!TrySend(infoBuffer, true))
                 return false;
 
 
@@ -357,12 +387,12 @@ namespace TTransfer.Network
             {
                 if (c.IsFolder)
                 {
-                    if (!SendFolder(c, fullName, ref totalBytes))
+                    if (!SendFolder(c, fullName))
                         return false;
                 }
                 else
                 {
-                    if(!SendFile(c, fullName, ref totalBytes))
+                    if(!SendFile(c, fullName))
                         return false;
                 }
             }

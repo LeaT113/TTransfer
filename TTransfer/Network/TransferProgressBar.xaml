@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="TTransfer.Network.TransferProgressBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TTransfer.Network"
+             mc:Ignorable="d" 
+             d:DesignHeight="25" d:DesignWidth="300">
+    <Grid Name="MyGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"/>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+
+        
+        <TextBlock Name="SizeTextBlock"  Grid.Column="0" Margin="0, 0, 3, 0" Foreground="White" TextAlignment="Right" VerticalAlignment="Center"/>
+        
+        <ProgressBar Name="ProgressBar" Grid.Column="1" Margin="1, 4, 1, 4"/>
+
+        <TextBlock Name="ActiveItemTextBlock" Grid.Column="2" Margin="5, 0, 0, 0" Foreground="White" VerticalAlignment="Center" TextAlignment="Left"/>
+    </Grid>
+</UserControl>

@@ -25,7 +25,7 @@ namespace TTransfer.Settings
         public const int MaxNameLength = 20;
 
 
-        public static Action SettingsChanged;
+        public static Action SettingsChanged { get; set; }
 
 
         /// <summary>

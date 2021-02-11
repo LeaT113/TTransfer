@@ -51,7 +51,7 @@ namespace TTransfer
             Network.Device.OnRecordableEvent += Console.AddMessage;
 
             NetworkControl.GetSelectedItems = Explorer.GetSelectedItems;
-
+            NetworkControl.TransferProgress.ProgressChanged += TransferProgress.TransferProgressChanged;
 
 
             Application.Current.Exit += NetworkControl.OnExit;

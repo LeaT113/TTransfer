@@ -43,7 +43,7 @@ namespace TTransfer.Explorer
         static readonly BitmapImage arrowLight = new BitmapImage(new Uri("Icons/arrow_light.ico", UriKind.Relative));
         static readonly BitmapImage arrowDark = new BitmapImage(new Uri("Icons/arrow_dark.ico", UriKind.Relative));
         static readonly ObservableCollection<string> sortOptions = new ObservableCollection<string>() { "Name", "Last modified", "Size", "Extension" };
-
+        static readonly string[] fileSizes = { "B", "KB", "MB", "GB", "TB", "PB" };
 
         // Public
         public ObservableCollection<DriveItem> DriveItems { get { return driveItems; } }
@@ -70,7 +70,7 @@ namespace TTransfer.Explorer
             } 
         }
 
-        // Internal
+        // Data
         ObservableCollection<DriveItem> driveItems;
         ObservableCollection<DirectoryItem> directoryItems;
         string activePath;
@@ -354,8 +354,10 @@ namespace TTransfer.Explorer
                 if (DirectoryListView.Items.Count > 0)
                     DirectoryListView.ScrollIntoView(DirectoryListView.Items[0]);
 
-
                 Keyboard.Focus(DirectoryListView);
+
+
+                _ = UpdateIcons();
             }
             
 
@@ -366,7 +368,6 @@ namespace TTransfer.Explorer
             SortComboBox.SelectedIndex = 0;
             activePath = path;
             OnPropertyChanged();
-
 
             return true;
         }
@@ -429,6 +430,13 @@ namespace TTransfer.Explorer
         {
             ListPath(activePath, DirectoryMove.ExcludeHistory);
         }
+        public async Task UpdateIcons()
+        {
+            for (int i = 0; i < directoryItems.Count; i++)
+            {
+                directoryItems[i].SetIcon(await IconService.GetIconAsync(directoryItems[i].Extension, directoryItems[i].Path));
+            }
+        }
 
 
         // Other
@@ -480,5 +488,18 @@ namespace TTransfer.Explorer
                 return false;
             }
         }   
+        public static string FormatFileSize(long bytes)
+        {
+            int order = 0;
+            long sizeCalc = bytes;
+            while (sizeCalc >= 1000 && order < fileSizes.Length - 1)
+            {
+                order++;
+                sizeCalc = sizeCalc / 1000;
+            }
+            // Adjust the format string to your preferences. For example "{0:0.#}{1}" would show a single decimal place, and no space.
+            return String.Format("{0:0.##} {1}", sizeCalc, fileSizes[order]);
+        }
+        
     }
 }

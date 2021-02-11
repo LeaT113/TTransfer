@@ -22,17 +22,21 @@ namespace TTransfer.Network
         CavemanTcpServer server;
         Device clientDevice;
         DataEncryptor clientEncryptor;
+        IProgress<TransferProgressReport> transferProgress;
         string clientIpPort;
         int maxPingMs;
         int maxBufferSize;
         long bytesReceived;
+        long totalBytes;
+        string saveLocation;
 
 
 
-        public TransferServer(IPAddress systemIP, int port, int maxPingMs, int maxBufferSize)
+        public TransferServer(IPAddress systemIP, int port, int maxPingMs, int maxBufferSize, IProgress<TransferProgressReport> transferProgress)
         {
             this.maxPingMs = maxPingMs;
             this.maxBufferSize= maxBufferSize;
+            this.transferProgress = transferProgress;
 
             server = new CavemanTcpServer(systemIP.ToString(), port);
             server.Events.ClientConnected += Events_ClientConnected;
@@ -66,6 +70,7 @@ namespace TTransfer.Network
 
             // Receive data
             bytesReceived = 0;
+            saveLocation = Settings.SettingsData.SaveLocation;
             await ReceiveData();
 
 
@@ -91,9 +96,7 @@ namespace TTransfer.Network
                 if (remoteDevice == null)
                     return false;
 
-
-                TTInstruction instruction = TTInstruction.Empty;
-                byte[] data = null;
+                CommunicationResult res = null;
                 byte[] buffer = null;
 
 
@@ -113,7 +116,7 @@ namespace TTransfer.Network
                     TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefuseDeny });
                     return false;
                 }
-                if(remoteDevice.ReceiveMode == DeviceReceiveMode.AskEachTime)
+                if (remoteDevice.ReceiveMode == DeviceReceiveMode.AskEachTime)
                 {
                     // TODO Ask for permission with YesNo
                 }
@@ -121,7 +124,7 @@ namespace TTransfer.Network
 
                 // Encryption
                 DataEncryptor encryptor = null;
-                if(remoteDevice.EncryptionEnabled)
+                if (remoteDevice.EncryptionEnabled)
                 {
                     encryptor = new DataEncryptor(remoteDevice.EncryptionPassword);
 
@@ -132,29 +135,34 @@ namespace TTransfer.Network
 
 
                     // Receive password
-                    if (!TryRead(ipPort, 1 + TTNet.TimePasswordLength, ref instruction, ref data))
+                    res = TryRead(ipPort, 1 + TTNet.TimePasswordLength, false);
+                    if (!res.Success)
                         return false;
-                    if(instruction != TTInstruction.Connection_SendPass)
+                    if (res.Instruction != TTInstruction.Connection_SendPass)
                     {
-                        if (instruction == TTInstruction.Connection_RefuseDeny)
+                        if (res.Instruction == TTInstruction.Connection_RefuseDeny)
                             OnRecordableEvent($"Connection from {remoteDevice.Name} refused refused because it did not have a password.", Console.ConsoleMessageType.Common);
-                        
+
                         return false;
                     }
 
+
                     // Check password
-                    byte[] receivedTimePassword = encryptor.AESDecryptBytes(data);
-                    if(!TTNet.CheckTimePasswordValid(receivedTimePassword, remoteDevice, maxPingMs))
+                    byte[] receivedTimePassword = encryptor.AESDecryptBytes(res.Data);
+                    if (!TTNet.CheckTimePasswordValid(receivedTimePassword, remoteDevice, maxPingMs))
                     {
                         OnRecordableEvent($"Connection from {remoteDevice.Name} refused because it did not have the correct password.", Console.ConsoleMessageType.Common);
-                        TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefusePass  });
+                        TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefusePass });
                         return false;
                     }
 
 
                     // Send password
                     byte[] timePassword = TTNet.GenerateTimePasswordBytes();
-                    buffer = new byte[1] { (byte)TTInstruction.Connection_SendPass }.ToList().Concat(encryptor.AESEncryptBytes(timePassword)).ToArray();
+                    buffer = new byte[1] { (byte)TTInstruction.Connection_SendPass }
+                    .ToList()
+                    .Concat(encryptor.AESEncryptBytes(timePassword))
+                    .ToArray();
                     if (!TrySend(ipPort, buffer))
                         return false;
                 }
@@ -167,16 +175,17 @@ namespace TTransfer.Network
 
 
                 // Wait if client accepted connection
-                if (!TryRead(ipPort, 1, ref instruction, ref data))
+                res = TryRead(ipPort, 1, false);
+                if (!res.Success)
                     return false;
-                if (instruction != TTInstruction.Connection_Accept)
+                if (res.Instruction != TTInstruction.Connection_Accept)
                 {
-                    if (instruction == TTInstruction.Connection_RefusePass)
+                    if (res.Instruction == TTInstruction.Connection_RefusePass)
                         OnRecordableEvent($"Connection from {remoteDevice.Name} refused because it requires a password and none is set.", Console.ConsoleMessageType.Common);
 
                     return false;
                 }
-                    
+
 
 
                 // Check busy again
@@ -191,24 +200,14 @@ namespace TTransfer.Network
                 clientDevice = remoteDevice;
                 clientIpPort = ipPort;
                 clientEncryptor = encryptor;
-                OnRecordableEvent($"Established { (clientDevice.EncryptionEnabled ? "secured" : "")} connection with {remoteDevice.Name}.", Console.ConsoleMessageType.Common);
+                OnRecordableEvent($"Established { (clientDevice.EncryptionEnabled ? "secure " : "")}connection with {remoteDevice.Name}.", Console.ConsoleMessageType.Common);
                 return true;
             });
         }
-        private bool TryRead(string ipPort, int count, ref TTInstruction instruction, ref byte[] data)
-        {
-            ReadResult result = server.ReadWithTimeout(maxPingMs, ipPort, count);
 
-            if (result.Status != ReadResultStatus.Success || !TTNet.UnpackTCPBuffer(result.Data, ref instruction, ref data))
-            {
-                return false;
-            }
-
-            return true;
-        }
         private bool TrySend(string ipPort, byte[] buffer)
         {
-            WriteResult result = server.SendWithTimeout(maxPingMs, ipPort, buffer);
+            WriteResult result =  server.SendWithTimeout(maxPingMs, ipPort, buffer);
 
             if (result.Status != WriteResultStatus.Success)
             {
@@ -217,6 +216,29 @@ namespace TTransfer.Network
 
             return true;
         }
+        private CommunicationResult TryRead(string ipPort, int count, bool doEncryption)
+        {
+            ReadResult result = server.ReadWithTimeout(maxPingMs, ipPort, count);
+
+            TTInstruction ins = TTInstruction.Empty;
+            byte[] buffer = null;
+            if (result.Status != ReadResultStatus.Success)
+            {
+                return new CommunicationResult();
+            }
+
+            if (doEncryption && clientEncryptor != null)
+                buffer = clientEncryptor.AESDecryptBytes(result.Data);
+            else
+                buffer = result.Data;
+
+            byte[] dat = null;
+            if (!TTNet.UnpackTCPBuffer(buffer, ref ins, ref dat))
+                return new CommunicationResult();
+
+            return new CommunicationResult(ins, dat);
+        }
+        
         private void TerminateConnection(string ipPort)
         {
             // TODO Cancellation token for receiving
@@ -237,24 +259,21 @@ namespace TTransfer.Network
         {
             return await Task.Run(() =>
             {
-                byte[] data = null;
-                TTInstruction instruction = TTInstruction.Empty;
-
-
                 // Receive info about transfer
-                ReadResult result = server.ReadWithTimeout(maxPingMs, clientIpPort, 13);
-                if (result.Status != ReadResultStatus.Success)
-                    return false;
-                if (!TTNet.UnpackTCPBuffer(result.Data, ref instruction, ref data))
-                    return false;
+                int length = 13;
+                if (clientEncryptor != null)
+                    length = DataEncryptor.PredictAESLength(length);
+                CommunicationResult res = TryRead(clientIpPort, length, true);
+
+
 
 
                 // Receive data
-                if (instruction == TTInstruction.Transfer_TransferInfo)
+                if (res.Instruction == TTInstruction.Transfer_TransferInfo)
                 {
                     // Receive files individually
-                    int itemCount = BitConverter.ToInt32(data, 0);
-                    long totalFileSize = BitConverter.ToInt64(data, 4);
+                    int itemCount = BitConverter.ToInt32(res.Data, 0);
+                    totalBytes = BitConverter.ToInt64(res.Data, 4);
 
                     for (int i = 0; i < itemCount; i++)
                     {
@@ -265,10 +284,13 @@ namespace TTransfer.Network
                 else
                     return false;
 
+
                 OnRecordableEvent("Received successfully.", Console.ConsoleMessageType.Common);
                 return true;
             });
         }
+
+        
 
         /// <summary>
         /// Receives a stream of data for the file, returns false if there was a disrupting network problem.
@@ -284,9 +306,15 @@ namespace TTransfer.Network
             // Receive
             long bytesToReceive = size;
             bool useEncryption = clientEncryptor != null;
+            TransferProgressReport report = new TransferProgressReport();
+            report.TotalBytes = totalBytes;
+            report.ActiveItem = fileName;
+            report.CurrentBytes = 0;
+            report.IsSender = false;
+            transferProgress.Report(report);
             try
             {
-                using (FileStream fs = File.Create($"{Settings.SettingsData.SaveLocation}\\{fullName}"))
+                using (FileStream fs = File.Create($"{saveLocation}\\{fullName}"))
                 {
                     ReadResult result;
                     int bufferSize = 0;
@@ -318,27 +346,34 @@ namespace TTransfer.Network
                             receivedBuffer = result.Data;
                         }
                         
-                        fs.Write(receivedBuffer, 0, bufferSize);
+                       fs.Write(receivedBuffer, 0, bufferSize);
                         bytesToReceive -= bufferSize;
                         bytesReceived += bufferSize;
+
+                        report.CurrentBytes = bytesReceived;
+                        transferProgress.Report(report);
                     }
                     fs.Flush();
                 }
             }
             catch (PathTooLongException e)
             {
-                OnRecordableEvent($"Could not receive '{fileName}' because the path to save is too long ({Settings.SettingsData.SaveLocation}\\{fileName})", Console.ConsoleMessageType.Error);
+                OnRecordableEvent($"Could not receive '{fileName}' because the path to save is too long ({saveLocation}\\{fileName})", Console.ConsoleMessageType.Error);
                 return true;
             }
 
 
             return true;
         }
+
+        /// <summary>
+        /// Creates a specified folder, returns false if failed.
+        /// </summary>
         private bool ReceiveFolder(string fullName)
         {
             try
             {
-                Directory.CreateDirectory($"{Settings.SettingsData.SaveLocation}\\{fullName}");
+                Directory.CreateDirectory($"{saveLocation}\\{fullName}");
             }
             catch(Exception e)
             {
@@ -350,23 +385,24 @@ namespace TTransfer.Network
         }
         private bool ReceiveItem()
         {
-            ReadResult result;
-            byte[] data = null;
-            TTInstruction instruction = TTInstruction.Empty;
+            CommunicationResult res;
 
 
             // Receive item info
-            result = server.ReadWithTimeout(maxPingMs, clientIpPort, 512);
-            if (result.Status != ReadResultStatus.Success)
+            int length = 512;
+            if (clientEncryptor != null)
+                length = DataEncryptor.PredictAESLength(length);
+            res = TryRead(clientIpPort, length, true);
+            if (!res.Success)
                 return false;
-            if (!TTNet.UnpackTCPBuffer(result.Data, ref instruction, ref data) || !(instruction == TTInstruction.Transfer_FileInfo || instruction == TTInstruction.Transfer_FolderInfo))
+            if (!(res.Instruction == TTInstruction.Transfer_FileInfo || res.Instruction == TTInstruction.Transfer_FolderInfo))
                 return false;
-            long size = BitConverter.ToInt64(data, 0);
-            string fullName = Encoding.UTF8.GetString(data, 8, 512 - 9).Replace("\0", string.Empty);
+            long size = BitConverter.ToInt64(res.Data, 0);
+            string fullName = Encoding.UTF8.GetString(res.Data, 8, 512 - 9).Replace("\0", string.Empty);
 
 
             // Receive item
-            if (instruction == TTInstruction.Transfer_FileInfo)
+            if (res.Instruction == TTInstruction.Transfer_FileInfo)
             {
                 ReceiveFile(fullName, size);
             }

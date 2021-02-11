@@ -177,7 +177,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <Image Name="DirectoryListView_Image" Margin="1" Source="{Binding Icon}" Opacity="{Binding IconOpacity}"/>
+                            <Image Name="DirectoryListView_Image" Margin="3" Source="{Binding Icon}" Opacity="{Binding IconOpacity}"/>
                             <Label Name="DirectoryListView_Label" Grid.Column="1" VerticalAlignment="Center" Content="{Binding Name}" FontSize="12" Foreground="White"/>
                             <Label Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Content="{Binding SizeReadable}" FontSize="12" Foreground="#BBBBBB"/>
                             <Label Grid.Column="3" Content="{Binding LastModifiedReadable}" FontSize="12" Foreground="#999999"/>

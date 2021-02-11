@@ -27,8 +27,9 @@ namespace TTransfer.Network
     public partial class NetworkControl : UserControl
     {
         public Action<string, Console.ConsoleMessageType> OnRecordableEvent;
-
+        public Progress<TransferProgressReport> TransferProgress;
         public Func<List<Explorer.DirectoryItem>> GetSelectedItems;
+
 
         public bool IsBusy
         {
@@ -81,6 +82,8 @@ namespace TTransfer.Network
             CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(DeviceListView.ItemsSource);
             view.SortDescriptions.Add(new SortDescription("Online", ListSortDirection.Descending));
             view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Descending));
+
+            TransferProgress = new Progress<TransferProgressReport>();
         }
 
         private void Grid_Loaded(object sender, RoutedEventArgs e)
@@ -89,11 +92,13 @@ namespace TTransfer.Network
 
             InitializeNetworkInfo();
 
+            
+
             // TCP
-            transferServer = new TransferServer(IPAddress, Settings.SettingsData.NetworkTransferPort, Settings.SettingsData.MaxNetworkPingMs, Settings.SettingsData.MaxBufferSize);
+            transferServer = new TransferServer(IPAddress, Settings.SettingsData.NetworkTransferPort, Settings.SettingsData.MaxNetworkPingMs, Settings.SettingsData.MaxBufferSize, TransferProgress);
             transferServer.OnRecordableEvent += OnRecordableEvent;
             transferServer.Start();
-            transferClient = new TransferClient(Settings.SettingsData.NetworkTransferPort, Settings.SettingsData.MaxNetworkPingMs, Settings.SettingsData.MaxBufferSize);
+            transferClient = new TransferClient(Settings.SettingsData.NetworkTransferPort, Settings.SettingsData.MaxNetworkPingMs, Settings.SettingsData.MaxBufferSize, TransferProgress);
             transferClient.OnRecordableEvent += OnRecordableEvent;
 
             TTNet.GeneratePresenceBuffer(MacAddress, out PresenceBuffer, TTInstruction.Discovery_Present, Settings.SettingsData.Name, DeviceType);

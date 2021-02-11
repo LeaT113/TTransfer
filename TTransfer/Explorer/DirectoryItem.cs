@@ -9,18 +9,12 @@ using System.Drawing;
 using System.Windows.Media;
 using System.Windows;
 using System.Windows.Interop;
+using System.ComponentModel;
 
 namespace TTransfer.Explorer
 {
-    public class DirectoryItem : ICloneable
+    public class DirectoryItem : ICloneable, INotifyPropertyChanged
     {
-        // Static
-        static Dictionary<string, ImageSource> iconCache = new Dictionary<string, ImageSource>();
-        static readonly string[] excludedExtensions = new string[] { ".exe", ".ico" };
-        static readonly ImageSource folderIcon = new BitmapImage(new Uri("Icons/icon_dir.ico", UriKind.Relative));
-        static string[] fileSizes = { "B", "KB", "MB", "GB", "TB", "PB" };
-
-
         // Visible
         public string Name { get { return name; } }
         public ImageSource Icon { get { return icon; } }
@@ -32,12 +26,10 @@ namespace TTransfer.Explorer
         public bool IsFolder { get { return Extension == null; } }
         public string Path { get { return path; } }
         public DateTime LastModified { get { return lastModified; } }
-
-        /// <summary>
-        /// Size of file in bytes
-        /// </summary>
         public long Size { get { return size; } }
         public string Extension { get { return extension; } }
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         // Data
         ImageSource icon;
@@ -59,20 +51,9 @@ namespace TTransfer.Explorer
             size = file.Length;
             lastModified = file.LastWriteTime;
 
-
-            int order = 0;
-            long sizeCalc = Size;
-            while (sizeCalc >= 1024 && order < fileSizes.Length - 1)
-            {
-                order++;
-                sizeCalc = sizeCalc / 1024;
-            }
-            // Adjust the format string to your preferences. For example "{0:0.#}{1}" would show a single decimal place, and no space.
-            sizeString = String.Format("{0:0.##} {1}", sizeCalc, fileSizes[order]);
-
+            sizeString = ExplorerControl.FormatFileSize(size);
             isHidden = file.Attributes.HasFlag(FileAttributes.Hidden);
-
-            icon = GetFileIcon(extension, path);
+            icon = IconService.GetInstantIcon(extension, path);
         }
         public DirectoryItem(DirectoryInfo directory)
         {
@@ -82,7 +63,7 @@ namespace TTransfer.Explorer
 
             isHidden = directory.Attributes.HasFlag(FileAttributes.Hidden);
 
-            icon = folderIcon;
+            icon = IconService.GetInstantIcon(extension, path);
         }
 
 
@@ -127,6 +108,8 @@ namespace TTransfer.Explorer
                 .ToArray();
         }
 
+
+        // Calculate
         /// <summary>
         /// Gets the total size of an file or folder, calculating folders recursively
         /// </summary>
@@ -188,24 +171,19 @@ namespace TTransfer.Explorer
             return children.Count();
         }
 
-
-        private static ImageSource GetFileIcon(string extension, string path)
+        public void SetIcon(ImageSource icon)
         {
-            if (iconCache.ContainsKey(extension))
-            {
-                return iconCache[extension];
-            }
-            else
-            {
-                ImageSource image = Imaging.CreateBitmapSourceFromHIcon(System.Drawing.Icon.ExtractAssociatedIcon(path).Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            this.icon = icon;
 
-                // Save image to cache
-                if (!excludedExtensions.Contains(extension))
-                {
-                    iconCache.Add(extension, image);
-                }
+            NotifyPropertyChanged();
+        }
 
-                return image;
+
+        public void NotifyPropertyChanged()
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(""));
             }
         }
 
