@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:TTransfer.Network"
              mc:Ignorable="d" 
              d:DesignHeight="25" d:DesignWidth="300">
-    <Grid Name="MyGrid">
+    <Grid Name="MyGrid" Style="{StaticResource InvisibleElement}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="150"/>

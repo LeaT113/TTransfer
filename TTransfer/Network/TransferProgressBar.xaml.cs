@@ -29,7 +29,7 @@ namespace TTransfer.Network
 
         public void TransferProgressChanged(object sender, TransferProgressReport e)
         {
-            if(e.PercentDone == 100)
+            if (e.PercentDone == 100)
             {
                 MyGrid.Style = Application.Current.Resources["InvisibleElement"] as Style;
             }
@@ -37,11 +37,10 @@ namespace TTransfer.Network
             {
                 MyGrid.Style = null;
                 ProgressBar.Value = e.PercentDone;
-                ActiveItemTextBlock.Text = e.ActiveItem;
+                string s = e.IsSender ? "Sending" : "Receiving";
+                ActiveItemTextBlock.Text = $"{s} {e.ActiveItem}";
                 SizeTextBlock.Text = e.TotalSize;
             }
-
-            
         }
     }
 }

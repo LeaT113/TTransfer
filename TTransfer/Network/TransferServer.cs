@@ -253,7 +253,7 @@ namespace TTransfer.Network
             }
         }
 
-
+        // TODO rework bool structure as throwing exceptions
         // Receiving
         private async Task<bool> ReceiveData()
         {
@@ -289,12 +289,37 @@ namespace TTransfer.Network
                 return true;
             });
         }
+        private bool ReceiveItem()
+        {
+            CommunicationResult res;
 
-        
 
-        /// <summary>
-        /// Receives a stream of data for the file, returns false if there was a disrupting network problem.
-        /// </summary>
+            // Receive item info
+            int length = 512;
+            if (clientEncryptor != null)
+                length = DataEncryptor.PredictAESLength(length);
+            res = TryRead(clientIpPort, length, true);
+            if (!res.Success)
+                return false;
+            if (!(res.Instruction == TTInstruction.Transfer_FileInfo || res.Instruction == TTInstruction.Transfer_FolderInfo))
+                return false;
+            long size = BitConverter.ToInt64(res.Data, 0);
+            string fullName = Encoding.UTF8.GetString(res.Data, 8, 512 - 9).Replace("\0", string.Empty);
+
+
+            // Receive item
+            if (res.Instruction == TTInstruction.Transfer_FileInfo)
+            {
+                ReceiveFile(fullName, size);
+            }
+            else
+            {
+                ReceiveFolder(fullName);
+            }
+
+
+            return true;
+        }
         private bool ReceiveFile(string fullName, long size)
         {
             string fileName = fullName;
@@ -345,13 +370,16 @@ namespace TTransfer.Network
 
                             receivedBuffer = result.Data;
                         }
-                        
-                       fs.Write(receivedBuffer, 0, bufferSize);
+
+                        fs.Write(receivedBuffer, 0, bufferSize);
                         bytesToReceive -= bufferSize;
                         bytesReceived += bufferSize;
 
-                        report.CurrentBytes = bytesReceived;
-                        transferProgress.Report(report);
+                        if (bytesReceived >= report.CurrentBytes + (totalBytes / 100) || bytesToReceive == 0)
+                        {
+                            report.CurrentBytes = bytesReceived;
+                            transferProgress.Report(report);
+                        }
                     }
                     fs.Flush();
                 }
@@ -365,10 +393,6 @@ namespace TTransfer.Network
 
             return true;
         }
-
-        /// <summary>
-        /// Creates a specified folder, returns false if failed.
-        /// </summary>
         private bool ReceiveFolder(string fullName)
         {
             try
@@ -383,37 +407,7 @@ namespace TTransfer.Network
 
             return true;
         }
-        private bool ReceiveItem()
-        {
-            CommunicationResult res;
-
-
-            // Receive item info
-            int length = 512;
-            if (clientEncryptor != null)
-                length = DataEncryptor.PredictAESLength(length);
-            res = TryRead(clientIpPort, length, true);
-            if (!res.Success)
-                return false;
-            if (!(res.Instruction == TTInstruction.Transfer_FileInfo || res.Instruction == TTInstruction.Transfer_FolderInfo))
-                return false;
-            long size = BitConverter.ToInt64(res.Data, 0);
-            string fullName = Encoding.UTF8.GetString(res.Data, 8, 512 - 9).Replace("\0", string.Empty);
-
-
-            // Receive item
-            if (res.Instruction == TTInstruction.Transfer_FileInfo)
-            {
-                ReceiveFile(fullName, size);
-            }
-            else
-            {
-                ReceiveFolder(fullName);
-            }
-
-
-            return true;
-        }
+        
 
 
         // Events

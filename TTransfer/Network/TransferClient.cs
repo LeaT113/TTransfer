@@ -227,7 +227,6 @@ namespace TTransfer.Network
 
 
         // Sending
-        // TODO Encrypt file info
         private async Task<bool> SendData()
         {
             return await Task.Run(() =>
@@ -277,10 +276,6 @@ namespace TTransfer.Network
                 return true;
             });
         }
-
-        /// <summary>
-        /// Sends a file to the server and returns false if there was a network error.
-        /// </summary>
         private bool SendFile(DirectoryItem file, string relativePath)
         {
             if (file.IsFolder)
@@ -335,14 +330,9 @@ namespace TTransfer.Network
                         bytesToSend -= bufferSize;
                         bytesSent += bufferSize;
 
-                        if(bytesSent > report.CurrentBytes + (totalBytes/100))
+                        if(bytesSent >= report.CurrentBytes + (totalBytes/100) || bytesToSend == 0)
                         {
                             report.CurrentBytes = bytesSent;
-                            transferProgress.Report(report);
-                        }
-                        if(bytesToSend == 0)
-                        {
-                            report.CurrentBytes = totalBytes;
                             transferProgress.Report(report);
                         }
                     }
@@ -358,10 +348,6 @@ namespace TTransfer.Network
 
             return true;
         }
-        
-         /// <summary>
-        /// Sends a folder and all of it contents recursively to the server and returns false if there was a network error.
-        /// </summary>
         private bool SendFolder(DirectoryItem folder, string relativePath)
         {
             if (!folder.IsFolder)
