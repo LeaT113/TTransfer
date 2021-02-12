@@ -19,11 +19,13 @@ namespace TTransfer.Settings
     /// </summary>
     public partial class YesNoDialog : Window
     {
-        public YesNoDialog(string title, string question)
+        public YesNoDialog(string title, string question, string okButtonText, string cancelButtonText)
         {
             InitializeComponent();
             Title = title;
             QuestionLabel.Text = question;
+            DialogButtonOk.Content = okButtonText;
+            DialogButtonCancel.Content = cancelButtonText;
         }
 
         private void DialogButtonOk_Click(object sender, RoutedEventArgs e)

@@ -4,9 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
+using System.Timers;
 using System.Threading.Tasks;
 using CavemanTcp;
+using System.Windows;
 
 namespace TTransfer.Network
 {
@@ -29,6 +30,8 @@ namespace TTransfer.Network
         long bytesReceived;
         long totalBytes;
         string saveLocation;
+        Timer timer;
+        Settings.YesNoDialog yesNoDialog;
 
 
 
@@ -119,6 +122,32 @@ namespace TTransfer.Network
                 if (remoteDevice.ReceiveMode == DeviceReceiveMode.AskEachTime)
                 {
                     // TODO Ask for permission with YesNo
+
+                    timer = new Timer(Settings.SettingsData.MaxPermissionAskWaitMs);
+                    timer.Elapsed += Events_TimerPermissionAskTimeout;
+                    timer.Start();
+
+                    bool allowed = false;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        yesNoDialog = new Settings.YesNoDialog("Accept connection?", $"Do you want to accept a connection from '{remoteDevice.Name}'?", "Yes", "No");
+                        yesNoDialog.Owner = Application.Current.MainWindow;
+                        allowed = yesNoDialog.ShowDialog() ?? false;
+                    });
+                    if(allowed)
+                    { 
+                        timer.Stop();
+                        timer.Dispose();
+                    }
+                    else
+                    {
+                        timer.Stop();
+                        timer.Dispose();
+
+                        OnRecordableEvent($"Connection from {remoteDevice.Name} refused because you refused it.", Console.ConsoleMessageType.Common);
+                        //TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefuseDeny });
+                        return false;
+                    }
                 }
 
 
@@ -204,6 +233,7 @@ namespace TTransfer.Network
                 return true;
             });
         }
+
 
         private bool TrySend(string ipPort, byte[] buffer)
         {
@@ -295,7 +325,7 @@ namespace TTransfer.Network
 
 
             // Receive item info
-            int length = 512;
+            int length = 1+8+1024;
             if (clientEncryptor != null)
                 length = DataEncryptor.PredictAESLength(length);
             res = TryRead(clientIpPort, length, true);
@@ -418,6 +448,18 @@ namespace TTransfer.Network
         private void Events_ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
         {
             TerminateConnection(e.IpPort);
+        }
+
+        private void Events_TimerPermissionAskTimeout(object sender, ElapsedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (yesNoDialog != null)
+                    yesNoDialog.Close();
+            });
+
+            timer.Stop();
+            timer.Dispose();
         }
     }
 }

@@ -288,7 +288,7 @@ namespace TTransfer.Network
 
             if (device.EncryptionEnabled)
             {
-                Settings.YesNoDialog dialog = new Settings.YesNoDialog("Remove encryption?", $"Do you want to remove encryption for communication with '" + device.Name + "'?");
+                Settings.YesNoDialog dialog = new Settings.YesNoDialog("Remove encryption?", $"Do you want to remove encryption for communication with '{device.Name}'?", "Yes", "Cancel");
                 dialog.Owner = Application.Current.MainWindow;
                 if(dialog.ShowDialog() ?? false)
                 {

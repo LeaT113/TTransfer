@@ -21,8 +21,8 @@
 
         <DockPanel Grid.Row="1" Margin="0,20,0,0" Background="#171717">
             <WrapPanel Margin="0, 9" HorizontalAlignment="Right">
-                <Button IsDefault="True" Name="DialogButtonOk" Click="DialogButtonOk_Click" Width="60" Margin="0,0,10,0" Content="OK" Style="{StaticResource DialogButton}"/>
-                <Button IsCancel="True" Margin="0, 0, 10, 0" Width="60" Content="Cancel" Style="{StaticResource DialogButton}"/>
+                <Button IsDefault="True" Name="DialogButtonOk" Click="DialogButtonOk_Click" Width="60" Margin="0,0,10,0" Content="Ok" Style="{StaticResource DialogButton}"/>
+                <Button IsCancel="True" Name="DialogButtonCancel" Margin="0, 0, 10, 0" Width="60" Content="Cancel" Style="{StaticResource DialogButton}"/>
             </WrapPanel>
 
         </DockPanel>

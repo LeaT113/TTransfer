@@ -21,7 +21,7 @@ namespace TTransfer.Settings
 
         // Network transfer settings
         public const int MaxBufferSize = 1024;
-
+        public const int MaxPermissionAskWaitMs = 5000;
         public const int MaxNameLength = 20;
 
 

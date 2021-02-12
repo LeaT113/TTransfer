@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CavemanTcp;
 using TTransfer.Explorer;
@@ -98,7 +99,7 @@ namespace TTransfer.Network
 
 
                 // Deny, accept, or askpass
-                res = TryRead(1);
+                res = TryRead(1, maxPingMs + Settings.SettingsData.MaxPermissionAskWaitMs);
                 if (!res.Success)
                     return false;
 
@@ -194,9 +195,10 @@ namespace TTransfer.Network
 
             return true;
         }
-        private CommunicationResult TryRead(int count)
+        private CommunicationResult TryRead(int count, int overrideTimeoutMs = -1)
         {
-            ReadResult result = client.ReadWithTimeout(maxPingMs, count);
+
+            ReadResult result = client.ReadWithTimeout(overrideTimeoutMs == -1 ? maxPingMs : overrideTimeoutMs, count);
 
             TTInstruction ins = TTInstruction.Empty;
             byte[] dat = null;
@@ -283,7 +285,7 @@ namespace TTransfer.Network
 
 
             // Send file info
-            byte[] infoBuffer = new byte[512];
+            byte[] infoBuffer = new byte[1+8+1024]; // instruction + fileSize + name (max 256 chars and 4 bytes per char)
             infoBuffer[0] = (byte)TTInstruction.Transfer_FileInfo;
 
             byte[] sizeBytes = BitConverter.GetBytes(file.Size);
@@ -291,7 +293,7 @@ namespace TTransfer.Network
 
             string fullName = $"{relativePath}{file.Name}";
             byte[] fullNameBytes = Encoding.UTF8.GetBytes(fullName);
-            Array.Copy(fullNameBytes, 0, infoBuffer, 1 + sizeBytes.Length, fullNameBytes.Length);
+            Array.Copy(fullNameBytes, 0, infoBuffer, 1 + 8, fullNameBytes.Length);
 
 
             if (!TrySend(infoBuffer, true))
@@ -355,7 +357,7 @@ namespace TTransfer.Network
 
 
             // Send folder info
-            byte[] infoBuffer = new byte[512]; // TODO Expand to 1024+9 to cover all of UTF8?
+            byte[] infoBuffer = new byte[1+8+1024];
             infoBuffer[0] = (byte)TTInstruction.Transfer_FolderInfo;
 
             string fullName = $"{relativePath}{folder.Name}";
