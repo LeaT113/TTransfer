@@ -31,6 +31,25 @@ namespace TTransfer.Network
         Transfer_FolderInfo = 32,
     }
 
+    public class FailedSendingException : Exception
+    {
+        public FailedSendingException() { }
+
+        public FailedSendingException(string message) : base(message) { }
+    }
+    public class FailedReceivingException : Exception
+    {
+        public FailedReceivingException() { }
+        public FailedReceivingException(string message) : base(message) { }
+    }
+    public class FailedConnectingException : Exception
+    {
+        public FailedConnectingException() { }
+        public FailedConnectingException(string message) : base(message) { }
+    }
+
+
+
 
 
     static class TTNet
@@ -171,6 +190,29 @@ namespace TTransfer.Network
 
             
             return difMs < maxDifferenceMs;
+        }
+
+
+        public static string FormatTimeSpan(TimeSpan duration)
+        {
+            string output = "";
+
+            if (duration.Days > 0)
+                output += duration.Days + "d";
+
+            if (duration.Hours > 0)
+                output += duration.Hours + "h";
+
+            if (duration.Minutes > 0)
+                output += duration.Minutes + "m";
+
+            if (duration.Seconds > 0)
+                output += duration.Seconds + "s";
+
+            if (duration.Milliseconds > 0)
+                output += duration.Milliseconds + "ms";
+
+            return output;
         }
     }
 }

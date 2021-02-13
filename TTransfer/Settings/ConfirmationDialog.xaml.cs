@@ -17,9 +17,9 @@ namespace TTransfer.Settings
     /// <summary>
     /// Interaction logic for YesNoDialog.xaml
     /// </summary>
-    public partial class YesNoDialog : Window
+    public partial class ConfirmationDialog : Window
     {
-        public YesNoDialog(string title, string question, string okButtonText, string cancelButtonText)
+        public ConfirmationDialog(string title, string question, string okButtonText, string cancelButtonText)
         {
             InitializeComponent();
             Title = title;
