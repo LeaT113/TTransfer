@@ -270,7 +270,6 @@ namespace TTransfer.Network
 
                 OnRecordableEvent("Connection terminated.", Console.ConsoleMessageType.Common);
             }
-            OnRecordableEvent("General connection termianted.", Console.ConsoleMessageType.Common);
         }
 
 

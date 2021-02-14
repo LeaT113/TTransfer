@@ -329,7 +329,8 @@ namespace TTransfer.Network
                         if (useEncryption)
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
 
-                        result = client.SendWithTimeout(maxPingMs, buffer);
+                        //result = client.SendWithTimeout(maxPingMs, buffer); // This line causes the issue
+                        result = client.Send(buffer);
                         if (result.Status != WriteResultStatus.Success)
                             throw new FailedSendingException("Could not send data.");
                     }
@@ -343,7 +344,7 @@ namespace TTransfer.Network
                     bytesToSend -= bufferSize;
                     bytesSent += bufferSize;
 
-
+                    
                     if (bytesSent >= report.CurrentBytes + (totalBytes / 100) || bytesToSend == 0)
                     {
                         report.CurrentBytes = bytesSent;
@@ -395,7 +396,6 @@ namespace TTransfer.Network
         }
         private void Events_ClientDisconnected(object sender, EventArgs e)
         {
-            OnRecordableEvent("event client disconnected", Console.ConsoleMessageType.Common);
             TerminateConnection();
         }
     }
