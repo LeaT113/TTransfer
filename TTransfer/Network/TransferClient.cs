@@ -115,9 +115,9 @@ namespace TTransfer.Network
                 await SendData();
 
 
-                OnRecordableEvent($"Sucessfully sent {items.Count} item/s ({ExplorerControl.FormatFileSize(bytesSent)}) in {TTNet.FormatTimeSpan(transferStopwatch.Elapsed)} at average { ExplorerControl.FormatFileSize(totalBytes * 1000/transferStopwatch.ElapsedMilliseconds)}/s.", Console.ConsoleMessageType.Common);
+                OnRecordableEvent($"Sucessfully sent {items.Count} item/s ({ExplorerControl.FormatFileSize(bytesSent)}) in {TTNet.FormatTimeSpan(transferStopwatch.Elapsed)} at average { ExplorerControl.FormatFileSize(totalBytes * 1000 / transferStopwatch.ElapsedMilliseconds)}/s.", Console.ConsoleMessageType.Common);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 OnRecordableEvent(e.Message, Console.ConsoleMessageType.Error);
             }
@@ -224,18 +224,13 @@ namespace TTransfer.Network
             
             if (client != null)
             {
-                // TODO Proper disconnect
-                if (client.IsConnected)
-                {
-                    client.Disconnect();
-                }
-                    
-
+                client.Disconnect();
                 client = null;
             }
 
             serverEncryptor = null;
             serverDevice = null;
+
 
             OnRecordableEvent("Connection terminated.", Console.ConsoleMessageType.Common);
             terminatingConnection = false;
@@ -334,7 +329,7 @@ namespace TTransfer.Network
                         if (useEncryption)
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
 
-                        result = client.Send(buffer);
+                        result = client.SendWithTimeout(maxPingMs, buffer);
                         if (result.Status != WriteResultStatus.Success)
                             throw new FailedSendingException("Could not send data.");
                     }
@@ -400,6 +395,7 @@ namespace TTransfer.Network
         }
         private void Events_ClientDisconnected(object sender, EventArgs e)
         {
+            OnRecordableEvent("event client disconnected", Console.ConsoleMessageType.Common);
             TerminateConnection();
         }
     }

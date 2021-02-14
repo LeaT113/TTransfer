@@ -117,7 +117,7 @@ namespace TTransfer.Network
             }
             finally
             {
-                //TerminateConnection(ipPort);
+                TerminateConnection(ipPort);
             }
         }
         private async Task EstablishConnection(string ipPort)
