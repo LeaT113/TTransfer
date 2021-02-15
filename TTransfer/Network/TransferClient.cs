@@ -68,6 +68,12 @@ namespace TTransfer.Network
 
             client.Events.ClientConnected += Events_ClientConnected;
             client.Events.ClientDisconnected += Events_ClientDisconnected;
+
+            client.Keepalive.EnableTcpKeepAlives = true;
+            client.Keepalive.TcpKeepAliveInterval = 5;
+            client.Keepalive.TcpKeepAliveTime = 5;
+            client.Keepalive.TcpKeepAliveRetryCount = 5;
+
             client.Connect(Settings.SettingsData.MaxNetworkPingMs);
 
             // TODO Add timeout
@@ -124,6 +130,7 @@ namespace TTransfer.Network
             }
             finally
             {
+                transferProgress.Report(new TransferProgressReport(true));
                 TerminateConnection();
             }
         }
@@ -240,7 +247,6 @@ namespace TTransfer.Network
             serverEncryptor = null;
             serverDevice = null;
 
-
             OnRecordableEvent("Connection terminated.", Console.ConsoleMessageType.Common);
             terminatingConnection = false;
         }
@@ -342,15 +348,14 @@ namespace TTransfer.Network
                         if (useEncryption)
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
 
-                        //result = client.SendWithTimeout(maxPingMs, buffer); // This line causes the issue
                         result = client.Send(buffer);
                         if (result.Status != WriteResultStatus.Success)
                             throw new FailedSendingException("Could not send data.");
                     }
-                    catch(Exception)
+                    catch(Exception e)
                     {
                         fs.Flush();
-                        throw new FailedSendingException($"Could not send file '{file.Name}'");
+                        throw new FailedSendingException($"Failed while sending '{file.Name}' ({e.Message}).");
                     }
                     
 

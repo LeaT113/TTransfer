@@ -46,6 +46,11 @@ namespace TTransfer.Network
             server = new CavemanTcpServer(systemIP.ToString(), port);
             server.Events.ClientConnected += Events_ClientConnected;
             server.Events.ClientDisconnected += Events_ClientDisconnected;
+
+            server.Keepalive.EnableTcpKeepAlives = true;
+            server.Keepalive.TcpKeepAliveInterval = 5;
+            server.Keepalive.TcpKeepAliveTime = 5;
+            server.Keepalive.TcpKeepAliveRetryCount = 5;
         }
 
 
@@ -117,6 +122,7 @@ namespace TTransfer.Network
             }
             finally
             {
+                transferProgress.Report(new TransferProgressReport(true));
                 TerminateConnection(ipPort);
             }
         }
@@ -351,13 +357,13 @@ namespace TTransfer.Network
             report.CurrentBytes = 0;
             report.IsSender = false;
             transferProgress.Report(report);
-            try
+            using (FileStream fs = File.Create($"{saveLocation}\\{fullName}"))
             {
-                using (FileStream fs = File.Create($"{saveLocation}\\{fullName}"))
+                ReadResult result;
+                int bufferSize = 0;
+                while (bytesToReceive > 0)
                 {
-                    ReadResult result;
-                    int bufferSize = 0;
-                    while (bytesToReceive > 0)
+                    try
                     {
                         bufferSize = (int)Math.Min(bytesToReceive, maxBufferSize);
                         byte[] receivedBuffer = null;
@@ -376,27 +382,30 @@ namespace TTransfer.Network
                         if (result.Status != ReadResultStatus.Success)
                         {
                             fs.Flush();
-                            throw new Exception();
+                            throw new Exception("Did not receive data in time.");
                         }
 
 
                         fs.Write(receivedBuffer, 0, bufferSize);
-                        bytesToReceive -= bufferSize;
-                        bytesReceived += bufferSize;
-
-
-                        if (bytesReceived >= report.CurrentBytes + (totalBytes / 100) || bytesToReceive == 0)
-                        {
-                            report.CurrentBytes = bytesReceived;
-                            transferProgress.Report(report);
-                        }
                     }
-                    fs.Flush();
+                    catch (Exception e)
+                    {
+                        fs.Flush();
+                        throw new FailedReceivingException($"Failed while receiving '{fileName}' ({e.Message}).");
+                    }
+
+
+                    bytesToReceive -= bufferSize;
+                    bytesReceived += bufferSize;
+
+
+                    if (bytesReceived >= report.CurrentBytes + (totalBytes / 100) || bytesToReceive == 0)
+                    {
+                        report.CurrentBytes = bytesReceived;
+                        transferProgress.Report(report);
+                    }
                 }
-            }
-            catch (Exception)
-            {
-                throw new FailedReceivingException();
+                fs.Flush();
             }
         }
         private void ReceiveFolder(string fullName)
