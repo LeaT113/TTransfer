@@ -19,7 +19,16 @@ namespace TTransfer.Network
             }
         }
         public long CurrentBytes { get { return currentBytes; } set { currentBytes = value; } }
-        public int PercentDone { get { return (int)((currentBytes * 100) / totalBytes); } }
+        public int PercentDone 
+        { 
+            get 
+            {
+                if (forceHide)
+                    return 100;
+
+                return (int)((currentBytes * 100) / totalBytes); 
+            } 
+        }
         public string TotalSize { get { return totalSize; } }
         public string ActiveItem { get { return activeItem; } set { activeItem = value; } }
         public bool IsSender { get { return sending; } set { sending = value; } }
@@ -31,12 +40,17 @@ namespace TTransfer.Network
         string totalSize;
         string activeItem;
         bool sending;
+        bool forceHide = false;
 
 
 
         public TransferProgressReport()
         {
 
+        }
+        public TransferProgressReport(bool forceHide)
+        {
+            this.forceHide = forceHide;
         }
     }
 }

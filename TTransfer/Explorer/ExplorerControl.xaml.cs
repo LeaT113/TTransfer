@@ -483,7 +483,7 @@ namespace TTransfer.Explorer
 
                 return readAllow && !readDeny;
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
                 return false;
             }
