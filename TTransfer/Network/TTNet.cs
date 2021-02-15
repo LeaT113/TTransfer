@@ -144,7 +144,7 @@ namespace TTransfer.Network
         // TCP
         public static bool UnpackTCPBuffer(byte[] buffer, ref TTInstruction instruction, ref byte[] data)
         {
-            if (buffer.Length < 1 || !Enum.IsDefined(typeof(TTInstruction), instruction))
+            if (buffer == null || buffer.Length < 1 || !Enum.IsDefined(typeof(TTInstruction), instruction))
             {
                 return false;
             }
@@ -157,7 +157,7 @@ namespace TTransfer.Network
         }
         public static bool UnpackTCPBuffer(byte[] buffer, ref TTInstruction instruction, ref List<byte> data)
         {
-            if (buffer.Length < 1 || !Enum.IsDefined(typeof(TTInstruction), instruction))
+            if (buffer == null ||  buffer.Length < 1 || !Enum.IsDefined(typeof(TTInstruction), instruction))
             {
                 return false;
             }
@@ -177,7 +177,9 @@ namespace TTransfer.Network
         }
         public static bool CheckTimePasswordValid(byte[] passwordBytes, Device checkedDevice, int maxDifferenceMs)
         {
-            
+            if (passwordBytes == null)
+                return false;
+
             string passString = Encoding.UTF8.GetString(passwordBytes);
             if (passString.Length < 4 + 19)
                 return false;

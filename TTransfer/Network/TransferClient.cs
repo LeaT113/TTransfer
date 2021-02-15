@@ -92,12 +92,16 @@ namespace TTransfer.Network
         {
             int timeout = overrideTimeoutMs ?? maxPingMs;
             ReadResult result = client.ReadWithTimeout(timeout, count);
+            if (result.Status != ReadResultStatus.Success)
+            {
+                throw new FailedReceivingException($"Did not receive response ({result.Status}).");
+            }
 
             TTInstruction ins = TTInstruction.Empty;
             byte[] dat = null;
-            if (result.Status != ReadResultStatus.Success || !TTNet.UnpackTCPBuffer(result.Data, ref ins, ref dat))
+            if (!TTNet.UnpackTCPBuffer(result.Data, ref ins, ref dat))
             {
-                throw new FailedReceivingException($"Did not receive response ({result.Status}).");
+                throw new FailedReceivingException($"Received invalid response.");
             }
 
             return new CommunicationResult(ins, dat);
@@ -113,9 +117,6 @@ namespace TTransfer.Network
 
 
                 await SendData();
-
-
-                OnRecordableEvent($"Sucessfully sent {items.Count} item/s ({ExplorerControl.FormatFileSize(bytesSent)}) in {TTNet.FormatTimeSpan(transferStopwatch.Elapsed)} at average { ExplorerControl.FormatFileSize(totalBytes * 1000 / transferStopwatch.ElapsedMilliseconds)}/s.", Console.ConsoleMessageType.Common);
             }
             catch (Exception e)
             {
@@ -167,6 +168,14 @@ namespace TTransfer.Network
                     byte[] timePassword = TTNet.GenerateTimePasswordBytes();
                     buffer = new byte[1] { (byte)TTInstruction.Connection_SendPass }.ToList().Concat(encryptor.AESEncryptBytes(timePassword)).ToArray();
                     TrySend(buffer, false);
+
+
+                    // Receive password response
+                    res = TryRead(1);
+                    if(res.Instruction != TTInstruction.Connection_AcceptPass)
+                    {
+                        throw new FailedConnectingException($"Connection to {serverDevice.Name} failed because you do not have the right password.");
+                    }
 
 
                     // Receive password
@@ -242,13 +251,14 @@ namespace TTransfer.Network
         {
             transferStopwatch = new Stopwatch();
             transferStopwatch.Start();
+            int totalItemCount = 0;
             await Task.Run(() =>
             {
                 // Send files info
                 byte[] infoBuffer = new byte[13];
                 infoBuffer[0] = (byte)TTInstruction.Transfer_TransferInfo;
 
-                int totalItemCount = items.Count();
+                totalItemCount = items.Count();
                 foreach (var item in items)
                 {
                     totalItemCount += item.GetTotalChildCount();
@@ -282,7 +292,10 @@ namespace TTransfer.Network
                     }
                 }
             });
+
+
             transferStopwatch.Stop();
+            OnRecordableEvent($"Sucessfully sent {totalItemCount} item/s ({ExplorerControl.FormatFileSize(bytesSent)}) in {TTNet.FormatTimeSpan(transferStopwatch.Elapsed)} at average { ExplorerControl.FormatFileSize(totalBytes * 1000 / transferStopwatch.ElapsedMilliseconds)}/s.", Console.ConsoleMessageType.Common);
         }
         private void SendFile(DirectoryItem file, string relativePath)
         {

@@ -65,17 +65,24 @@ namespace TTransfer.Network
         {
             byte[] decryptedBytes = null;
 
-            using (MemoryStream ms = new MemoryStream())
+            try
             {
-                using (var cs = new CryptoStream(ms, aesDecryptor, CryptoStreamMode.Write))
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
-                    cs.Close();
+                    using (var cs = new CryptoStream(ms, aesDecryptor, CryptoStreamMode.Write))
+                    {
+                        cs.Write(bytesToBeDecrypted, 0, bytesToBeDecrypted.Length);
+                        cs.Close();
+                    }
+                    decryptedBytes = ms.ToArray();
                 }
-                decryptedBytes = ms.ToArray();
-            }
 
-            return decryptedBytes;
+                return decryptedBytes;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
 

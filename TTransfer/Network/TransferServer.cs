@@ -8,6 +8,7 @@ using System.Timers;
 using System.Threading.Tasks;
 using CavemanTcp;
 using System.Windows;
+using System.Diagnostics;
 
 namespace TTransfer.Network
 {
@@ -26,6 +27,7 @@ namespace TTransfer.Network
         IProgress<TransferProgressReport> transferProgress;
         Settings.ConfirmationDialog confirmationDialog;
         Timer timer;
+        Stopwatch transferStopwatch;
         string clientIpPort;
         int maxPingMs;
         int maxBufferSize;
@@ -107,13 +109,11 @@ namespace TTransfer.Network
                 bytesReceived = 0;
                 saveLocation = Settings.SettingsData.SaveLocation;
                 await ReceiveData();
-
-
-                OnRecordableEvent("Received successfully.", Console.ConsoleMessageType.Common); // TODO Info like in client
+                
             }
             catch(Exception e)
             {
-                OnRecordableEvent(e.Message, Console.ConsoleMessageType.Common);
+                OnRecordableEvent(e.Message, Console.ConsoleMessageType.Warning);
             }
             finally
             {
@@ -160,7 +160,6 @@ namespace TTransfer.Network
                 }
                 if (remoteDevice.ReceiveMode == DeviceReceiveMode.AskEachTime)
                 {
-                    // TODO Ask for permission with YesNo
                     timer = new Timer(Settings.SettingsData.MaxPermissionAskWaitMs);
                     timer.Elapsed += Events_TimerPermissionAskTimeout;
                     timer.Start();
@@ -180,7 +179,7 @@ namespace TTransfer.Network
                         timer.Dispose();
 
                         
-                        //TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefuseDeny });
+                        TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefuseDeny });
                         throw new FailedConnectingException($"Connection from {remoteDevice.Name} refused because you refused it.");
                     }
                 }
@@ -213,6 +212,7 @@ namespace TTransfer.Network
                         TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_RefusePass });
                         throw new FailedConnectingException($"Connection from {remoteDevice.Name} refused because it did not have the correct password.");
                     }
+                    TrySend(ipPort, new byte[] { (byte)TTInstruction.Connection_AcceptPass });
 
 
                     // Send password
@@ -276,6 +276,8 @@ namespace TTransfer.Network
         // Data
         private async Task ReceiveData()
         {
+            transferStopwatch = new Stopwatch();
+            transferStopwatch.Start();
             await Task.Run(() =>
             {
                 // Receive info about transfer
@@ -286,10 +288,11 @@ namespace TTransfer.Network
 
 
                 // Receive data
+                int itemCount = 0;
                 if (res.Instruction == TTInstruction.Transfer_TransferInfo)
                 {
                     // Receive files individually
-                    int itemCount = BitConverter.ToInt32(res.Data, 0);
+                    itemCount = BitConverter.ToInt32(res.Data, 0);
                     totalBytes = BitConverter.ToInt64(res.Data, 4);
 
                     for (int i = 0; i < itemCount; i++)
@@ -299,6 +302,9 @@ namespace TTransfer.Network
                 }
                 else
                     throw new FailedReceivingException("Client sent wrong instruction about transfer.");
+
+                transferStopwatch.Stop();
+                OnRecordableEvent($"Sucessfully received {itemCount} item/s ({Explorer.ExplorerControl.FormatFileSize(bytesReceived)}) in {TTNet.FormatTimeSpan(transferStopwatch.Elapsed)} at average { Explorer.ExplorerControl.FormatFileSize(bytesReceived * 1000 / transferStopwatch.ElapsedMilliseconds)}/s.", Console.ConsoleMessageType.Common);
             });
         }
         private void ReceiveItem()
