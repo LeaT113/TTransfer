@@ -92,8 +92,6 @@ namespace TTransfer.Network
 
             InitializeNetworkInfo();
 
-            
-
             // TCP
             transferServer = new TransferServer(IPAddress, Settings.SettingsData.NetworkTransferPort, Settings.SettingsData.MaxNetworkPingMs, Settings.SettingsData.MaxBufferSize, TransferProgress);
             transferServer.OnRecordableEvent += OnRecordableEvent;

@@ -126,7 +126,7 @@
 
 
 
-
+        <!--
         <Style x:Key="ScrollBarLineButton" TargetType="{x:Type RepeatButton}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="true"/>
@@ -294,7 +294,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+        -->
 
 
 
