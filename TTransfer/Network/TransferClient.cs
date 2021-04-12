@@ -71,9 +71,9 @@ namespace TTransfer.Network
             client.Events.ClientDisconnected += Events_ClientDisconnected;
             
             client.Keepalive.EnableTcpKeepAlives = false;
-            client.Keepalive.TcpKeepAliveInterval = 5;
-            client.Keepalive.TcpKeepAliveTime = 5;
-            client.Keepalive.TcpKeepAliveRetryCount = 5;
+            //client.Keepalive.TcpKeepAliveInterval = 5;
+            //client.Keepalive.TcpKeepAliveTime = 5;
+            //client.Keepalive.TcpKeepAliveRetryCount = 5;
 
             client.Connect(Settings.SettingsData.MaxNetworkPingMs);
 
@@ -234,7 +234,7 @@ namespace TTransfer.Network
         }
         public void TerminateConnection()
         {
-            OnRecordableEvent($"Terminate connection was called ({!terminatingConnection})", Console.ConsoleMessageType.Common);
+            OnRecordableEvent($"Terminate connection was called ({!terminatingConnection})", Console.ConsoleMessageType.Warning);
             if (terminatingConnection || client == null)
                 return;
 
@@ -333,7 +333,6 @@ namespace TTransfer.Network
             // Send file
             long bytesToSend = file.Size;
             bool useEncryption = serverEncryptor != null;
-            OnRecordableEvent("Encryption enabled: " + useEncryption, Console.ConsoleMessageType.Warning);
             TransferProgressReport report = new TransferProgressReport();
             report.TotalBytes = totalBytes;
             report.ActiveItem = file.Name;

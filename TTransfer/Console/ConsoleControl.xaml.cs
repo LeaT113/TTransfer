@@ -78,7 +78,7 @@ namespace TTransfer.Console
 
         private string GetClockString()
         {
-            return "[" + DateTime.Now.ToString("HH:mm:ss") + "]";
+            return "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "]";
         }
     }
 }

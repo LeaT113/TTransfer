@@ -48,9 +48,9 @@ namespace TTransfer.Network
             server.Events.ClientDisconnected += Events_ClientDisconnected;
             
             server.Keepalive.EnableTcpKeepAlives = false;
-            server.Keepalive.TcpKeepAliveInterval = 5;
-            server.Keepalive.TcpKeepAliveTime = 5;
-            server.Keepalive.TcpKeepAliveRetryCount = 5;
+            //server.Keepalive.TcpKeepAliveInterval = 5;
+            //server.Keepalive.TcpKeepAliveTime = 5;
+            //server.Keepalive.TcpKeepAliveRetryCount = 5;
         }
 
 
