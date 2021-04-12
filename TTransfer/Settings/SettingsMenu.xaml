@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TTransfer.Settings"
         mc:Ignorable="d"
-        Title="Settings" Height="500" Width="350" Background="#202020" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" FontSize="14">
+        Title="Settings" Height="500" Width="350" Background="#202020" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" FontSize="14" Icon="Icons/icon_settings_inverted.png">
     <Grid>
         <StackPanel Orientation="Vertical" Margin="10, 20, 10, 10">
 

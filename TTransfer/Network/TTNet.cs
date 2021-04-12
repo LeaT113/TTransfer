@@ -173,7 +173,7 @@ namespace TTransfer.Network
         /// </summary>
         public static byte[] GenerateTimePasswordBytes()
         {
-            return Encoding.UTF8.GetBytes(Settings.SettingsData.Name.Substring(0, 4) + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"));
+            return Encoding.UTF8.GetBytes(Settings.SettingsData.Name.Substring(0, 4) + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fff")); // TODO ! This could be causing random disconnect issue, add milliseconds
         }
         public static bool CheckTimePasswordValid(byte[] passwordBytes, Device checkedDevice, int maxDifferenceMs)
         {
@@ -181,7 +181,7 @@ namespace TTransfer.Network
                 return false;
 
             string passString = Encoding.UTF8.GetString(passwordBytes);
-            if (passString.Length < 4 + 19)
+            if (passString.Length < 4 + 23) // 4 first chars of name + 23 chars of time
                 return false;
 
             if (passString.Substring(0, 4) != checkedDevice.Name.Substring(0, 4))

@@ -48,20 +48,22 @@ namespace TTransfer.Console
             if (!enabled)
                 return;
 
+
+            string content = $"{GetClockString()} {message}\n";
             Application.Current.Dispatcher.Invoke(() =>
             {
                 switch (type)
                 {
                     case ConsoleMessageType.Common:
-                        OutputTextBlock.Inlines.Add(new Run(GetClockString() + " - " + message + "\n"));
+                        OutputTextBlock.Inlines.Add(new Run(content));
                         break;
 
                     case ConsoleMessageType.Warning:
-                        OutputTextBlock.Inlines.Add(new Run(GetClockString() + " - " + message + "\n") { Foreground = warningColor});
+                        OutputTextBlock.Inlines.Add(new Run(content) { Foreground = warningColor});
                         break;
 
                     case ConsoleMessageType.Error:
-                        OutputTextBlock.Inlines.Add(new Run(GetClockString() + " - " + message + "\n") { Foreground = errorColor });
+                        OutputTextBlock.Inlines.Add(new Run(content) { Foreground = errorColor });
                         break;
                 }
 

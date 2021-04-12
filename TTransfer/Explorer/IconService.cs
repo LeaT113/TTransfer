@@ -19,7 +19,7 @@ namespace TTransfer.Explorer
         // Cache
         static Dictionary<string, ImageSource> iconCache;
         static Dictionary<int, ImageSource> folderIconCache;
-        static readonly string[] cacheExcludedExtensions = new string[] { ".exe", ".ico", "dir" };
+        static readonly string[] cacheExcludedExtensions = new string[] { ".exe", ".ico", ".url", "dir" };
 
         // Directory
         [StructLayout(LayoutKind.Sequential)]
@@ -58,6 +58,7 @@ namespace TTransfer.Explorer
         }
         public static async Task<ImageSource> GetIconAsync(string extension, string fullName)
         {
+            // TODO Move to initialize method
             if (iconCache == null)
                 iconCache = new Dictionary<string, ImageSource>();
             if (folderIconCache == null)
@@ -69,7 +70,7 @@ namespace TTransfer.Explorer
             if (iconCache.ContainsKey(extension))
                 return iconCache[extension];
 
-
+            // TODO Consider other things for Task.Run to speed up further
             // Get icon pointer
             IntPtr handleIcon;
             int iIcon = 0;
@@ -78,7 +79,7 @@ namespace TTransfer.Explorer
                 SHFILEINFO shinfo = new SHFILEINFO();
                 SHGetFileInfo(fullName, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), SHGFI_ICON | SHGFI_LARGEICON);
                 handleIcon = shinfo.hIcon;
-                iIcon = shinfo.iIcon;
+                iIcon = shinfo.iIcon; // TODO Can use this method for files as well? Would allow to cache depending on iIcon, so same exe icons could also be cached
 
                 // Folder icon cache
                 if (folderIconCache.ContainsKey(iIcon))
@@ -98,11 +99,9 @@ namespace TTransfer.Explorer
                     icon = Imaging.CreateBitmapSourceFromHIcon(handleIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
                     icon.Freeze();
                 });
-
-
             }
-
             DestroyIcon(handleIcon);
+
 
             // Add to cache
             if(extension == "dir")
@@ -115,7 +114,6 @@ namespace TTransfer.Explorer
                     iconCache.Add(extension, icon);
             }
             
-
 
             return icon;
         }

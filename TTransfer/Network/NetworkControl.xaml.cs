@@ -162,7 +162,7 @@ namespace TTransfer.Network
                 }
             }
 
-            // If interface with selected mac doesn't exist, select the one which connect to internet
+            // If interface with selected mac doesn't exist, select the one which connected to internet
             if (MacAddress == null)
             {
                 if(backupMac != null)
@@ -267,7 +267,15 @@ namespace TTransfer.Network
         // Events
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            transferClient.StartTransfer(GetSelectedItems(), (Device)DeviceListView.SelectedItem);
+            // TODO Proper check
+            if (DeviceListView.SelectedItem == null)
+                return;
+
+            var selectedItems = GetSelectedItems();
+            if (selectedItems == null || selectedItems.Count < 1)
+                return;
+
+            transferClient.StartTransfer(selectedItems, (Device)DeviceListView.SelectedItem);
         }
         private void DeviceListView_ReceiveModeButton_Click(object sender, RoutedEventArgs e)
         {

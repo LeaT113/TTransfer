@@ -60,6 +60,7 @@ namespace TTransfer.Explorer
         }
         public ObservableCollection<string> SortOptions { get { return sortOptions; } }
         
+        // TODO Remove
         public bool IsFolderSelected { 
             get
             {

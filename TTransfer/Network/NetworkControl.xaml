@@ -108,8 +108,9 @@
             <Button Name="SendButton" Grid.Column="1" Margin="4, 0, 10, 0" VerticalAlignment="Center" Content="Send" FontSize="15" Style="{StaticResource SendButton}" Click="SendButton_Click"/>
         </Grid>
 
-        
+
         <!--Item view-->
+        <!--HorizontalContentAlignment="Stretch"-->
         <ListView x:Name="DeviceListView" Grid.Row="1" Margin="0,0,3,6" BorderBrush="#535353" Background="#1e1e1e" HorizontalContentAlignment="Stretch" SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate>

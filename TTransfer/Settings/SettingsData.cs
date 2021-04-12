@@ -11,7 +11,7 @@ namespace TTransfer.Settings
     public static class SettingsData
     {
         // Network
-        public const int MaxNetworkPingMs = 5000;
+        public const int MaxNetworkPingMs = 30000;
 
         // Network discovery settings
         public const int NetworkPresencePort = 11500;
@@ -20,7 +20,7 @@ namespace TTransfer.Settings
         public const int PresenceTimeoutCheckPeriod = 3000;
 
         // Network transfer settings
-        public const int MaxBufferSize = 1024;
+        public const int MaxBufferSize = 1048576;
         public const int MaxPermissionAskWaitMs = 5000;
         public const int MaxNameLength = 20;
 
@@ -50,7 +50,7 @@ namespace TTransfer.Settings
         }
 
         /// <summary>
-        /// Location, in which temporary and downloaded files will be stores.
+        /// Location in which temporary and downloaded files will be stores.
         /// </summary>
         public static string SaveLocation
         {
@@ -58,9 +58,6 @@ namespace TTransfer.Settings
             set { Properties.Settings.Default.DownloadURI = value; Properties.Settings.Default.Save(); if (SettingsChanged != null) SettingsChanged(); ; }
         }
 
-        /// <summary>
-        /// Maximum amount of time that the application will wait for a network response in miliseconds.
-        /// </summary>
 
         /// <summary>
         /// Mac address of the selected network interface
@@ -72,7 +69,7 @@ namespace TTransfer.Settings
         }
 
         /// <summary>
-        /// Does the user want to see hidden files or not
+        /// Does the user want to see hidden files
         /// </summary>
         public static bool ShowHiddenFiles
         {
@@ -85,6 +82,9 @@ namespace TTransfer.Settings
             }
         }
 
+        /// <summary>
+        /// Does the user want to load network drives
+        /// </summary>
         public static bool ShowNetworkDrives
         {
             get { return Properties.Settings.Default.ShowNetworkDrives; }
@@ -118,6 +118,7 @@ namespace TTransfer.Settings
 
             return null;
         }
+
         /// <summary>
         /// Returns device with specified IP from saved devices.
         /// </summary>
@@ -137,6 +138,7 @@ namespace TTransfer.Settings
 
             return null;
         }
+
         /// <summary>
         /// Returns device using index in list
         /// </summary>
@@ -147,6 +149,7 @@ namespace TTransfer.Settings
 
             return Properties.Settings.Default.Devices[index];
         }
+
         /// <summary>
         /// Adds new device into list or updates info on already existing device.
         /// </summary>

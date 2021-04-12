@@ -226,9 +226,6 @@
     <Resource Include="Explorer\Icons\icon_downloads.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Settings\Icons\icon_settings.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Explorer\Icons\icon_folderBackup.png" />
   </ItemGroup>
   <ItemGroup>
@@ -236,6 +233,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Network\Icons\icon_entertext_black.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Settings\Icons\icon_settings.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Settings\Icons\icon_settings_inverted.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

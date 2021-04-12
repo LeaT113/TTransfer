@@ -44,6 +44,7 @@ namespace TTransfer.Network
             this.maxBufferSize = maxBufferSize;
             this.transferProgress = transferProgress;
             terminatingConnection = false;
+            this.bytesSent = 0;
         }
 
 
@@ -68,15 +69,15 @@ namespace TTransfer.Network
 
             client.Events.ClientConnected += Events_ClientConnected;
             client.Events.ClientDisconnected += Events_ClientDisconnected;
-
-            client.Keepalive.EnableTcpKeepAlives = true;
+            
+            client.Keepalive.EnableTcpKeepAlives = false;
             client.Keepalive.TcpKeepAliveInterval = 5;
             client.Keepalive.TcpKeepAliveTime = 5;
             client.Keepalive.TcpKeepAliveRetryCount = 5;
 
             client.Connect(Settings.SettingsData.MaxNetworkPingMs);
 
-            // TODO Add timeout
+            // TODO Add timeout / what does timeout on connect do
         }
 
 
@@ -84,11 +85,17 @@ namespace TTransfer.Network
         private void TrySend(byte[] buffer, bool doEncryption)
         {
             byte[] b = buffer;
-            if (doEncryption && serverEncryptor != null)
+
+            if(doEncryption)
+            {
+                if (serverEncryptor == null)
+                    throw new FailedSendingException("Encryptor is not initialized.");
+
                 b = serverEncryptor.AESEncryptBytes(buffer);
+            }
+
 
             WriteResult result = client.SendWithTimeout(maxPingMs, b);
-
             if (result.Status != WriteResultStatus.Success)
             {
                 throw new FailedSendingException($"Could not send data ({result.Status}).");
@@ -192,11 +199,10 @@ namespace TTransfer.Network
                     }
                     catch(Exception e)
                     {
-                        OnRecordableEvent("Caught " + e.Message, Console.ConsoleMessageType.Error);
+                        OnRecordableEvent("Caught " + e.Message, Console.ConsoleMessageType.Error); // TODO why is this like this
                         throw new Exception();
                     }
                     
-
 
                     // Check password
                     byte[] receivedTimePassword = encryptor.AESDecryptBytes(res.Data);
@@ -228,6 +234,7 @@ namespace TTransfer.Network
         }
         public void TerminateConnection()
         {
+            OnRecordableEvent($"Terminate connection was called ({!terminatingConnection})", Console.ConsoleMessageType.Common);
             if (terminatingConnection || client == null)
                 return;
 
@@ -280,7 +287,7 @@ namespace TTransfer.Network
                 byte[] sizeBytes = BitConverter.GetBytes(totalSize);
                 Array.Copy(sizeBytes, 0, infoBuffer, 1 + 4, 8);
 
-                TrySend(infoBuffer, true);
+                TrySend(infoBuffer, serverEncryptor != null);
 
 
                 // Send data
@@ -320,12 +327,13 @@ namespace TTransfer.Network
             byte[] fullNameBytes = Encoding.UTF8.GetBytes(fullName);
             Array.Copy(fullNameBytes, 0, infoBuffer, 1 + 8, fullNameBytes.Length);
 
-            TrySend(infoBuffer, true);
+            TrySend(infoBuffer, serverEncryptor != null);
 
 
             // Send file
             long bytesToSend = file.Size;
             bool useEncryption = serverEncryptor != null;
+            OnRecordableEvent("Encryption enabled: " + useEncryption, Console.ConsoleMessageType.Warning);
             TransferProgressReport report = new TransferProgressReport();
             report.TotalBytes = totalBytes;
             report.ActiveItem = file.Name;
@@ -335,22 +343,32 @@ namespace TTransfer.Network
             WriteResult result;
             using (FileStream fs = File.OpenRead(file.Path))
             {
+                if (fs == null)
+                    throw new FailedSendingException($"Could not read file at '{file.Path}'.");
+
                 int bufferSize = 0;
                 while (bytesToSend > 0)
                 {
                     try
                     {
+                        // TODO What if I dont segment it manually, but let TCP do it (speed?, what about fail in the middle)
                         bufferSize = (int)Math.Min(bytesToSend, maxBufferSize);
-
                         byte[] buffer = new byte[bufferSize];
                         fs.Read(buffer, 0, bufferSize);
 
+
                         if (useEncryption)
+                        {
+                            if (serverEncryptor == null)
+                                throw new FailedSendingException("The encryptor is not initialized.");
+
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
+                        }
+                            
 
                         result = client.Send(buffer);
                         if (result.Status != WriteResultStatus.Success)
-                            throw new FailedSendingException("Could not send data.");
+                            throw new FailedSendingException("Send/write operation was not successful.");
                     }
                     catch(Exception e)
                     {
@@ -386,7 +404,7 @@ namespace TTransfer.Network
             byte[] fullNameBytes = Encoding.UTF8.GetBytes(fullName);
             Array.Copy(fullNameBytes, 0, infoBuffer, 1 + 8, fullNameBytes.Length);
 
-            TrySend(infoBuffer, true);
+            TrySend(infoBuffer, serverEncryptor != null);
 
 
             // Send contents

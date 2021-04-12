@@ -102,6 +102,8 @@ namespace TTransfer.Settings
             using (var dialog = new FolderBrowserDialog())
             {
                 dialog.SelectedPath = SettingsData.SaveLocation;
+                dialog.Description = "Select a location to save received data.";
+                dialog.ShowNewFolderButton = true;
                 DialogResult result = dialog.ShowDialog();
 
                 if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))

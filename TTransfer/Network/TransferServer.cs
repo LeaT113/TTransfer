@@ -46,8 +46,8 @@ namespace TTransfer.Network
             server = new CavemanTcpServer(systemIP.ToString(), port);
             server.Events.ClientConnected += Events_ClientConnected;
             server.Events.ClientDisconnected += Events_ClientDisconnected;
-
-            server.Keepalive.EnableTcpKeepAlives = true;
+            
+            server.Keepalive.EnableTcpKeepAlives = false;
             server.Keepalive.TcpKeepAliveInterval = 5;
             server.Keepalive.TcpKeepAliveTime = 5;
             server.Keepalive.TcpKeepAliveRetryCount = 5;
@@ -258,6 +258,7 @@ namespace TTransfer.Network
         }
         private void TerminateConnection(string ipPort)
         {
+            OnRecordableEvent("Called terminate connection (" + ipPort + ")", Console.ConsoleMessageType.Warning);
             if (ipPort == "")
                 return;
 
@@ -366,24 +367,21 @@ namespace TTransfer.Network
                     try
                     {
                         bufferSize = (int)Math.Min(bytesToReceive, maxBufferSize);
-                        byte[] receivedBuffer = null;
-                        if (useEncryption)
-                        {
-                            result = server.Read(clientIpPort, DataEncryptor.PredictAESLength(bufferSize));
-                            receivedBuffer = clientEncryptor.AESDecryptBytes(result.Data);
-                        }
-                        else
-                        {
-                            result = server.Read(clientIpPort, bufferSize);
-                            receivedBuffer = result.Data;
-                        }
 
 
+                        int readSize = useEncryption ? DataEncryptor.PredictAESLength(bufferSize) : bufferSize;
+                        result = server.Read(clientIpPort, readSize);
                         if (result.Status != ReadResultStatus.Success)
                         {
-                            fs.Flush();
                             throw new Exception("Did not receive data in time.");
                         }
+
+
+                        byte[] receivedBuffer = new byte[bufferSize];
+                        if (useEncryption)
+                            receivedBuffer = clientEncryptor.AESDecryptBytes(result.Data);
+                        else
+                            receivedBuffer = result.Data;
 
 
                         fs.Write(receivedBuffer, 0, bufferSize);
