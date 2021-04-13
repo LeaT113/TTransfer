@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +35,7 @@ namespace TTransfer.Network
         long bytesSent;
         long totalBytes;
         bool terminatingConnection;
-        
+
 
 
         public TransferClient(int port, int maxPingMs, int maxBufferSize, IProgress<TransferProgressReport> transferProgress)
@@ -351,7 +352,7 @@ namespace TTransfer.Network
                     try
                     {
                         // TODO What if I dont segment it manually, but let TCP do it (speed?, what about fail in the middle)
-                        bufferSize = (int)Math.Min(bytesToSend, maxBufferSize);
+                        bufferSize = (int)Math.Min(bytesToSend, maxBufferSize / 2);
                         byte[] buffer = new byte[bufferSize];
                         fs.Read(buffer, 0, bufferSize);
 
@@ -363,7 +364,7 @@ namespace TTransfer.Network
 
                             buffer = serverEncryptor.AESEncryptBytes(buffer);
                         }
-                            
+
 
                         result = client.Send(buffer);
                         if (result.Status != WriteResultStatus.Success)

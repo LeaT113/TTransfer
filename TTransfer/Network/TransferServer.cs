@@ -358,8 +358,10 @@ namespace TTransfer.Network
             report.CurrentBytes = 0;
             report.IsSender = false;
             transferProgress.Report(report);
-            using (FileStream fs = File.Create($"{saveLocation}\\{fullName}"))
+            using (FileStream fs = new FileStream($"{saveLocation}\\{fullName}", FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: Settings.SettingsData.FileStreamBufferSize))
             {
+                fs.SetLength(bytesToReceive);
+
                 ReadResult result;
                 int bufferSize = 0;
                 while (bytesToReceive > 0)
