@@ -368,7 +368,6 @@ namespace TTransfer.Network
                     {
                         bufferSize = (int)Math.Min(bytesToReceive, maxBufferSize);
 
-
                         int readSize = useEncryption ? DataEncryptor.PredictAESLength(bufferSize) : bufferSize;
                         result = server.Read(clientIpPort, readSize);
                         if (result.Status != ReadResultStatus.Success)

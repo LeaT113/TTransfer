@@ -20,7 +20,7 @@ namespace TTransfer.Settings
         public const int PresenceTimeoutCheckPeriod = 3000;
 
         // Network transfer settings
-        public const int MaxBufferSize = 1048576;
+        public const int MaxBufferSize = 512; // 1048576 - MiB
         public const int MaxPermissionAskWaitMs = 5000;
         public const int MaxNameLength = 20;
 
