@@ -352,7 +352,7 @@ namespace TTransfer.Network
                     try
                     {
                         // TODO What if I dont segment it manually, but let TCP do it (speed?, what about fail in the middle)
-                        bufferSize = (int)Math.Min(bytesToSend, maxBufferSize / 2);
+                        bufferSize = (int)Math.Min(bytesToSend, maxBufferSize);
                         byte[] buffer = new byte[bufferSize];
                         fs.Read(buffer, 0, bufferSize);
 
