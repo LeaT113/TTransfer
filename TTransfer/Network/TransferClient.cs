@@ -386,6 +386,9 @@ namespace TTransfer.Network
                         report.CurrentBytes = bytesSent;
                         transferProgress.Report(report);
                     }
+
+
+                    //Thread.Sleep(1); // Fix for network crash
                 }
                 fs.Flush();
             }
