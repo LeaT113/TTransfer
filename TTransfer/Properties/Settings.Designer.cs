@@ -88,6 +88,21 @@ namespace TTransfer.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValue("False")]
+        public bool SlowSending
+        {
+            get
+            {
+                return ((bool)(this["SlowSending"]));
+            }
+            set
+            {
+                this["SlowSending"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValue("False")]
         public bool ShowHiddenFiles
         {
             get

@@ -41,6 +41,16 @@ namespace TTransfer.Settings
                     .ToString(); 
             } 
         }
+
+        public bool SlowSending
+        {
+            get { return SettingsData.SlowSending; }
+            set
+            {
+                SettingsData.SlowSending = value;
+                OnSettingsChanged();
+            }
+        }
         public bool ShowHiddenFiles
         {
             get { return SettingsData.ShowHiddenFiles; }
@@ -165,6 +175,11 @@ namespace TTransfer.Settings
         {
             if (DirectorySettingsChanged != null)
                 DirectorySettingsChanged();
+        }
+
+        private void SlowSendingCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

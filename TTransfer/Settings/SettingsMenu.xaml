@@ -47,6 +47,7 @@
             </DockPanel>
             <ComboBox Name="NetworkInterfaceComboBox" Margin="5, 7, 5, 0" SelectedIndex="0" FontSize="12" SelectionChanged="NetworkInterfaceComboBox_SelectionChanged" ItemsSource="{Binding Path=NetworkInterfaceNames}"/>
             <TextBlock Name="NetworkInterfaceIP" Margin="7, 7, 5, 0" Foreground="#BBBBBB" Text="{Binding Path=NetIP}" FontSize="13"/>
+            <CheckBox Name="SlowSendingCheckbox" Margin="7, 7, 0, 0" Content="Slow sending" IsChecked="{Binding Path=SlowSending}" Foreground="#BBBBBB" VerticalContentAlignment="Center" FontSize="13" Click="SlowSendingCheckbox_Click"/>
 
 
             <DockPanel Margin="0, 25, 0, 0">

@@ -387,8 +387,8 @@ namespace TTransfer.Network
                         transferProgress.Report(report);
                     }
 
-
-                    //Thread.Sleep(1); // Fix for network crash
+                    if(Settings.SettingsData.SlowSending)
+                        Thread.Sleep(1); // Fix for network crash
                 }
                 fs.Flush();
             }

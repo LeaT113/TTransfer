@@ -25,8 +25,8 @@ namespace TTransfer.Settings
         public const int MaxNameLength = 20;
         public const int FileStreamBufferSize = 512 * 1024;
 
-
         public static Action SettingsChanged { get; set; }
+
 
 
         /// <summary>
@@ -68,6 +68,18 @@ namespace TTransfer.Settings
             get { return Properties.Settings.Default.InterfaceMac; }
             set { Properties.Settings.Default.InterfaceMac = value; Properties.Settings.Default.Save(); if(SettingsChanged != null) SettingsChanged(); }
         }
+
+        public static bool SlowSending
+        {
+            get { return Properties.Settings.Default.SlowSending; }
+            set
+            {
+                Properties.Settings.Default.SlowSending = value;
+                Properties.Settings.Default.Save();
+                if (SettingsChanged != null) SettingsChanged();
+            }
+        }
+
 
         /// <summary>
         /// Does the user want to see hidden files
