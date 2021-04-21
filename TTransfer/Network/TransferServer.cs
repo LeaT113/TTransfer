@@ -46,14 +46,19 @@ namespace TTransfer.Network
             server = new CavemanTcpServer(systemIP.ToString(), port);
             server.Events.ClientConnected += Events_ClientConnected;
             server.Events.ClientDisconnected += Events_ClientDisconnected;
-            
-            server.Keepalive.EnableTcpKeepAlives = false;
-            //server.Keepalive.TcpKeepAliveInterval = 5;
-            //server.Keepalive.TcpKeepAliveTime = 5;
-            //server.Keepalive.TcpKeepAliveRetryCount = 5;
+            server.Logger += LoggerLog;
+
+
+            server.Keepalive.EnableTcpKeepAlives = true;
+            server.Keepalive.TcpKeepAliveInterval = 5;
+            server.Keepalive.TcpKeepAliveTime = 5;
+            server.Keepalive.TcpKeepAliveRetryCount = 5;
         }
 
-
+        private void LoggerLog(string cont)
+        {
+            OnRecordableEvent.Invoke(cont, Console.ConsoleMessageType.Debugging);
+        }
 
         // Public
         public void Start()
@@ -369,7 +374,7 @@ namespace TTransfer.Network
                     try
                     {
                         bufferSize = (int)Math.Min(bytesToReceive, maxBufferSize);
-
+                        
                         int readSize = useEncryption ? DataEncryptor.PredictAESLength(bufferSize) : bufferSize;
                         result = server.Read(clientIpPort, readSize);
                         if (result.Status != ReadResultStatus.Success)

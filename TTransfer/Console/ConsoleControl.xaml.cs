@@ -19,7 +19,8 @@ namespace TTransfer.Console
     {
         Common,
         Warning,
-        Error
+        Error,
+        Debugging
     }
 
 
@@ -29,6 +30,7 @@ namespace TTransfer.Console
         // Static
         static Brush warningColor = new SolidColorBrush(Color.FromRgb(232, 219, 70));
         static Brush errorColor = new SolidColorBrush(Color.FromRgb(217, 63, 52));
+        static Brush debuggingColor = new SolidColorBrush(Color.FromRgb(202, 66, 255));
 
         // Internal
         bool enabled = true;
@@ -64,6 +66,10 @@ namespace TTransfer.Console
 
                     case ConsoleMessageType.Error:
                         OutputTextBlock.Inlines.Add(new Run(content) { Foreground = errorColor });
+                        break;
+
+                    case ConsoleMessageType.Debugging:
+                        OutputTextBlock.Inlines.Add(new Run(content) { Foreground = debuggingColor });
                         break;
                 }
 

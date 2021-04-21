@@ -66,19 +66,26 @@ namespace TTransfer.Network
 
             // Create connection
             client = new CavemanTcpClient(device.IPAddress.ToString(), port);
+            client.Logger += LoggerLog;
             serverDevice = device;
 
             client.Events.ClientConnected += Events_ClientConnected;
             client.Events.ClientDisconnected += Events_ClientDisconnected;
             
-            client.Keepalive.EnableTcpKeepAlives = false;
-            //client.Keepalive.TcpKeepAliveInterval = 5;
-            //client.Keepalive.TcpKeepAliveTime = 5;
-            //client.Keepalive.TcpKeepAliveRetryCount = 5;
+            client.Keepalive.EnableTcpKeepAlives = true;
+            client.Keepalive.TcpKeepAliveInterval = 5;
+            client.Keepalive.TcpKeepAliveTime = 5;
+            client.Keepalive.TcpKeepAliveRetryCount = 5;
+
 
             client.Connect(Settings.SettingsData.MaxNetworkPingMs);
 
             // TODO Add timeout / what does timeout on connect do
+        }
+
+        private void LoggerLog(string cont)
+        {
+            OnRecordableEvent.Invoke(cont, Console.ConsoleMessageType.Debugging);
         }
 
 
